@@ -74,7 +74,7 @@ h1::after {
 }
 
 h2 {
-    font-size: 2rem;
+    font-size: 1.7rem;
     margin-top: 2rem;
 }
 
@@ -246,13 +246,13 @@ input:focus, textarea:focus, select:focus {
 
 /* Navigation Tabs */
 .tabs-container {
-    background: linear-gradient(to bottom, #e8dcc8, #d9cfc1);
-    border-bottom: 4px solid #d4a574;
+    background: linear-gradient(to bottom, #7a1f2b, #5e1822);
+    border-bottom: 4px solid #4a1119;
     padding: 0;
     margin: 0 0 2rem 0;
     position: relative;
     z-index: 100;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .tabs {
@@ -268,7 +268,7 @@ input:focus, textarea:focus, select:focus {
 .tab-link {
     display: block;
     padding: 1rem 2rem;
-    color: #8b7355;
+    color: #f4e4c1;
     text-decoration: none;
     border: none;
     font-family: 'Garamond', serif;
@@ -282,16 +282,16 @@ input:focus, textarea:focus, select:focus {
 }
 
 .tab-link:hover {
-    background-color: rgba(212, 165, 116, 0.2);
-    color: #5a5a5a;
-    border-bottom-color: #b8860b;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-bottom-color: #d4af37;
 }
 
 .tab-link.active {
-    background-color: rgba(212, 165, 116, 0.3);
-    color: #5a5a5a;
-    border-bottom-color: #b8860b;
-    box-shadow: inset 0 -3px 5px rgba(212, 165, 116, 0.3);
+    background-color: rgba(0, 0, 0, 0.2);
+    color: #fff;
+    border-bottom-color: #d4af37;
+    box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.2);
 }
 
 /* Intro Section */
