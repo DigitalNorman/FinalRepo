@@ -74,7 +74,7 @@ h1::after {
 }
 
 h2 {
-    font-size: 1.7rem;
+    font-size: 1.45rem;
     margin-top: 2rem;
 }
 
@@ -246,7 +246,8 @@ input:focus, textarea:focus, select:focus {
 
 /* Navigation Tabs */
 .tabs-container {
-    background: linear-gradient(to bottom, #7a1f2b, #5e1822);
+    background-color: #6b1a27;
+    background-image: linear-gradient(to bottom, #7a1f2b, #5e1822);
     border-bottom: 4px solid #4a1119;
     padding: 0;
     margin: 0 0 2rem 0;
