@@ -27,13 +27,6 @@
 
     <section class="findings-db">
         <section class="intro-section db-controls-panel">
-            <label class="db-label" for="db-source">Database source</label>
-            <select id="db-source">
-                <option value="databasefiles/Final Baronum - Fief Holdings.csv">Fief Holdings</option>
-                <option value="databasefiles/Final Baronum - Lords and Soldiers.csv">Lords and Soldiers</option>
-                <option value="databasefiles/Final Baronum - Original Text.csv">Original Text</option>
-            </select>
-
             <label class="db-label" for="db-search">Search all parameters</label>
             <input id="db-search" type="search" placeholder="Search any field..." autocomplete="off">
 
@@ -42,17 +35,39 @@
                     <input id="db-only-matches" type="checkbox" checked>
                     Show only search results
                 </label>
-                <button id="db-toggle-list" type="button">Hide List</button>
+                <button id="db-toggle-combined" type="button">Hide Combined Table</button>
+                <button id="db-toggle-sources" type="button">Show Source Tables</button>
             </div>
 
             <div id="db-status" class="db-status" aria-live="polite">Loading database...</div>
         </section>
 
-        <section class="intro-section db-table-panel" id="db-list-panel">
+        <section class="intro-section db-table-panel" id="db-combined-panel">
+            <h2>Combined Findings Table</h2>
             <div class="table-wrap">
-                <table class="data-table" id="db-table">
-                    <thead id="db-head"></thead>
-                    <tbody id="db-body"></tbody>
+                <table class="data-table" id="db-combined-table">
+                    <thead id="db-combined-head"></thead>
+                    <tbody id="db-combined-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="intro-section db-table-panel is-hidden" id="db-sources-panel">
+            <h2>Source Tables (Bottom Section)</h2>
+
+            <h3>Final Baronum - Lords and Soldiers</h3>
+            <div class="table-wrap">
+                <table class="data-table" id="db-lords-table">
+                    <thead id="db-lords-head"></thead>
+                    <tbody id="db-lords-body"></tbody>
+                </table>
+            </div>
+
+            <h3>Final Baronum - Fief Holdings</h3>
+            <div class="table-wrap">
+                <table class="data-table" id="db-holdings-table">
+                    <thead id="db-holdings-head"></thead>
+                    <tbody id="db-holdings-body"></tbody>
                 </table>
             </div>
         </section>

@@ -380,18 +380,20 @@ input:focus, textarea:focus, select:focus {
     display: none;
 }
 
+#db-sources-panel h3 {
+    margin-top: 1.25rem;
+}
+
 .data-table td {
     vertical-align: top;
 }
 
-.data-table td[contenteditable='true'] {
-    cursor: text;
-    background: rgba(255, 255, 255, 0.3);
+.data-table tbody tr.lord-continued td {
+    background: rgba(212, 165, 116, 0.08);
 }
 
-.data-table td[contenteditable='true']:focus {
-    outline: 2px solid #b8860b;
-    background: #fff;
+.data-table tbody tr.lord-continued td:first-child {
+    border-left: 4px solid #b8860b;
 }
 
 .data-table tbody tr.is-filtered-out {
