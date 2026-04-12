@@ -1,6 +1,7 @@
 const FILES = {
     holdings: 'databasefiles/Final Baronum - Fief Holdings.csv',
-    lords: 'databasefiles/Final Baronum - Lords and Soldiers.csv'
+    lords: 'databasefiles/Final Baronum - Lords and Soldiers.csv',
+    original: 'databasefiles/Final Baronum - Original Text.csv'
 };
 
 const ui = {
@@ -16,7 +17,9 @@ const ui = {
     lordsHead: document.getElementById('db-lords-head'),
     lordsBody: document.getElementById('db-lords-body'),
     holdingsHead: document.getElementById('db-holdings-head'),
-    holdingsBody: document.getElementById('db-holdings-body')
+    holdingsBody: document.getElementById('db-holdings-body'),
+    originalHead: document.getElementById('db-original-head'),
+    originalBody: document.getElementById('db-original-body')
 };
 
 const state = {
@@ -26,7 +29,8 @@ const state = {
     sourcesHidden: true,
     combinedRows: [],
     sourceLordsRows: [],
-    sourceHoldingsRows: []
+    sourceHoldingsRows: [],
+    sourceOriginalRows: []
 };
 
 function clean(value) {
@@ -307,6 +311,7 @@ function applyFilter() {
     const visibleCombined = filterTableRows(ui.combinedBody, state.combinedRows);
     filterTableRows(ui.lordsBody, state.sourceLordsRows);
     filterTableRows(ui.holdingsBody, state.sourceHoldingsRows);
+    filterTableRows(ui.originalBody, state.sourceOriginalRows);
     updateStatus(visibleCombined, state.combinedRows.length);
 }
 
@@ -326,28 +331,34 @@ async function loadAndBuildTables() {
     ui.status.textContent = 'Loading and combining tables...';
 
     try {
-        const [lordsResponse, holdingsResponse] = await Promise.all([
+        const [lordsResponse, holdingsResponse, originalResponse] = await Promise.all([
             fetch(encodeURI(FILES.lords)),
-            fetch(encodeURI(FILES.holdings))
+            fetch(encodeURI(FILES.holdings)),
+            fetch(encodeURI(FILES.original))
         ]);
 
-        if (!lordsResponse.ok || !holdingsResponse.ok) {
+        if (!lordsResponse.ok || !holdingsResponse.ok || !originalResponse.ok) {
             throw new Error('Could not load one or more source CSV files.');
         }
 
-        const [lordsText, holdingsText] = await Promise.all([
+        const [lordsText, holdingsText, originalText] = await Promise.all([
             lordsResponse.text(),
-            holdingsResponse.text()
+            holdingsResponse.text(),
+            originalResponse.text()
         ]);
 
         const lordsRecords = parseCSV(lordsText);
         const holdingsRecords = parseCSV(holdingsText);
+        const originalRecords = parseCSV(originalText);
 
         state.sourceLordsRows = sourceRowsFromRecords(lordsRecords, [
             'Book_ID', 'Lord_ID', 'Firstname', 'Surname', 'Milites', 'Servientes', 'Feudi_Owned', 'Notes'
         ]);
         state.sourceHoldingsRows = sourceRowsFromRecords(holdingsRecords, [
             'Book_ID', 'Lord_ID', 'Cont_Com_Name', 'Mod_Com_Name', 'Modern_Province', 'Number_Feudi', 'Comitatus', 'Comestabulia', 'Notes'
+        ]);
+        state.sourceOriginalRows = sourceRowsFromRecords(originalRecords, [
+            'Book_ID', 'Original_Text'
         ]);
         state.combinedRows = combinedRows(lordsRecords, holdingsRecords);
 
@@ -358,12 +369,12 @@ async function loadAndBuildTables() {
                 'Lord_ID',
                 'Firstname',
                 'Surname',
-                'Milites',
-                'Servientes',
-                'Feudi_owned',
-                'Comestabulia (or Comitatus)',
-                'Mod_Com_Name (Number_Feudi)',
-                'Modern_Province'
+                'Total Knights',
+                'Soldiers',
+                'Fiefs',
+                'Constable or Count',
+                'City and # of Knights Owed',
+                'Province'
             ],
             state.combinedRows,
             (row) => (row.isContinuation ? 'lord-continued' : '')
@@ -381,6 +392,13 @@ async function loadAndBuildTables() {
             ui.holdingsBody,
             ['Book_ID', 'Lord_ID', 'Cont_Com_Name', 'Mod_Com_Name', 'Modern_Province', 'Number_Feudi', 'Comitatus', 'Comestabulia', 'Notes'],
             state.sourceHoldingsRows
+        );
+
+        renderTable(
+            ui.originalHead,
+            ui.originalBody,
+            ['Book_ID', 'Original_Text'],
+            state.sourceOriginalRows
         );
 
         applyFilter();
