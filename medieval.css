@@ -419,8 +419,14 @@ input:focus, textarea:focus, select:focus {
 }
 
 .footer-sep {
-    margin: 0 0.5rem;
-    color: #8b7355;
+    display: inline-block;
+    width: 0;
+    height: 1.1rem;
+    margin: 0 0.75rem;
+    border-left: 2px solid #6b1a27;
+    vertical-align: middle;
+    font-size: 0;
+    line-height: 0;
 }
 
 /* Responsive design */
