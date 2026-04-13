@@ -4,7 +4,7 @@ A database that include the first 99 entries in the Catalogus Baronum, an import
 
 ## Live Site
 
-https://digitalnorman.github.io/FinalRepo/
+https://digitalnorman.github.io/Digitalizing-the-Catalogus-Baronum/index.html
 
 ## Repository Files
 
