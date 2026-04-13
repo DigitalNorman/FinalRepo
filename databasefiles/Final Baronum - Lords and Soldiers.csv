@@ -8,7 +8,7 @@ Book_ID,Lord_ID,Firstname,Surname,Milites,Servientes,Feudi_Owned,Notes
 7,7,Boamundus,de Cagnano ,8,8,2,
 8,8,NA,Judex Maior Botonti,3,4,1,
 9,9,Guillelmus,de Tivilla,6,0,2,"Damaged manuscript, Servientes missing."
-10,12,Hugo,Frascente ,2,0,1,"Damaged manuscript, Servientes missing."
+10,10,Hugo,Frascente ,2,0,1,"Damaged manuscript, Servientes missing."
 11,11,Riccardus,de Carbonaria ,2,3,1,
 12,12,Petrus,Filius Guillelmi Briardi ,2,3,1,
 13,13,Robbertus,filius Guillelmi Gurgulionis,12,30,1,
