@@ -53,6 +53,7 @@
 		integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
 		crossorigin=""
 	></script>
+	<script src="https://cdn.jsdelivr.net/npm/proj4@2.12.1/dist/proj4.min.js"></script>
 	<script>
 		const statusEl = document.getElementById('map-status');
 
@@ -60,6 +61,20 @@
 			preferCanvas: true,
 			zoomControl: true
 		}).setView([41.9, 12.5], 6);
+
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 18,
+			attribution: '&copy; OpenStreetMap contributors'
+		}).addTo(map);
+
+		// Common Italian CRSs for municipal data exports.
+		proj4.defs('EPSG:3003', '+proj=tmerc +lat_0=0 +lon_0=9 +k=0.9996 +x_0=1500000 +y_0=0 +ellps=intl +units=m +no_defs');
+		proj4.defs('EPSG:3004', '+proj=tmerc +lat_0=0 +lon_0=15 +k=0.9996 +x_0=2520000 +y_0=0 +ellps=intl +units=m +no_defs');
+		proj4.defs('EPSG:32632', '+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs');
+		proj4.defs('EPSG:32633', '+proj=utm +zone=33 +datum=WGS84 +units=m +no_defs');
+		proj4.defs('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs');
+		proj4.defs('EPSG:25833', '+proj=utm +zone=33 +ellps=GRS80 +units=m +no_defs');
+		proj4.defs('EPSG:4258', '+proj=longlat +ellps=GRS80 +no_defs');
 
 		function getFirstCoordinate(geojson) {
 			if (!geojson || !Array.isArray(geojson.features)) {
@@ -91,6 +106,36 @@
 			const xLooksLikeLat = x >= 35 && x <= 48;
 			const yLooksLikeLon = y >= 6 && y <= 19;
 			return xLooksLikeLat && yLooksLikeLon;
+		}
+
+		function normalizeCrsName(rawName) {
+			if (!rawName || typeof rawName !== 'string') {
+				return 'EPSG:4326';
+			}
+
+			const match = rawName.toUpperCase().match(/EPSG[:\/:](\d+)/);
+			if (match) {
+				return 'EPSG:' + match[1];
+			}
+
+			return rawName.toUpperCase();
+		}
+
+		function reprojectCoordinates(coords, sourceCrs) {
+			if (!Array.isArray(coords)) {
+				return;
+			}
+
+			if (typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+				const projected = proj4(sourceCrs, 'EPSG:4326', [coords[0], coords[1]]);
+				coords[0] = projected[0];
+				coords[1] = projected[1];
+				return;
+			}
+
+			for (const child of coords) {
+				reprojectCoordinates(child, sourceCrs);
+			}
 		}
 
 		function swapCoordinateOrder(coords) {
@@ -130,7 +175,23 @@
 				return response.json();
 			})
 			.then((data) => {
-				const crsName = data && data.crs && data.crs.properties ? data.crs.properties.name : 'unspecified CRS';
+				const rawCrsName = data && data.crs && data.crs.properties ? data.crs.properties.name : 'EPSG:4326';
+				const sourceCrs = normalizeCrsName(rawCrsName);
+				let reprojected = false;
+
+				if (sourceCrs !== 'EPSG:4326' && Array.isArray(data.features)) {
+					try {
+						for (const feature of data.features) {
+							if (feature && feature.geometry && feature.geometry.coordinates) {
+								reprojectCoordinates(feature.geometry.coordinates, sourceCrs);
+							}
+						}
+						reprojected = true;
+					} catch (projectionError) {
+						console.warn('CRS reprojection skipped:', projectionError);
+					}
+				}
+
 				const firstCoord = getFirstCoordinate(data);
 				const needsSwap = firstCoord ? looksLikeLatLngOrder(firstCoord) : false;
 
@@ -184,7 +245,7 @@
 				window.addEventListener('resize', () => {
 					map.invalidateSize();
 				});
-				statusEl.textContent = 'Loaded municipal boundaries successfully. CRS: ' + crsName + (needsSwap ? ' (lat/lon swapped to lon/lat for Leaflet).' : ' (lon/lat order confirmed).');
+				statusEl.textContent = 'Loaded municipal boundaries successfully. Source CRS: ' + sourceCrs + (reprojected ? ' (reprojected to EPSG:4326).' : '') + (needsSwap ? ' (lat/lon swapped to lon/lat for Leaflet).' : ' (lon/lat order confirmed).');
 			})
 			.catch((error) => {
 				statusEl.textContent = error.message + ' Open the site through a local server if needed.';
