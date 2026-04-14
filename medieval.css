@@ -400,6 +400,27 @@ input:focus, textarea:focus, select:focus {
     display: none;
 }
 
+/* Map page */
+.map-panel {
+    margin: 1rem 0 2rem;
+}
+
+#italy-map {
+    width: 100%;
+    height: 78vh;
+    min-height: 540px;
+    border: 3px solid #d4a574;
+    box-shadow: 0 0 10px rgba(212, 165, 116, 0.3);
+    border-radius: 4px;
+    background: #efe2c5;
+}
+
+.map-status {
+    margin-top: 0.65rem;
+    font-size: 1rem;
+    text-align: center;
+}
+
 /* Site footer */
 .site-footer {
     margin-top: 2.5rem;
@@ -459,5 +480,10 @@ input:focus, textarea:focus, select:focus {
         justify-content: center;
         align-items: center;
         gap: 0.2rem;
+    }
+
+    #italy-map {
+        height: 68vh;
+        min-height: 420px;
     }
 }
