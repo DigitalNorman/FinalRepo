@@ -110,7 +110,24 @@
 					}
 				}).addTo(map);
 
-				map.fitBounds(boundaries.getBounds(), { padding: [16, 16] });
+				const bounds = boundaries.getBounds();
+				map.fitBounds(bounds, {
+					padding: [24, 24],
+					maxZoom: 9
+				});
+
+				// Recalculate after first paint so the heavy GeoJSON is centered in split views.
+				requestAnimationFrame(() => {
+					map.invalidateSize();
+					map.fitBounds(bounds, {
+						padding: [24, 24],
+						maxZoom: 9
+					});
+				});
+
+				window.addEventListener('resize', () => {
+					map.invalidateSize();
+				});
 				statusEl.textContent = 'Loaded municipal boundaries successfully.';
 			})
 			.catch((error) => {
