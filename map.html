@@ -157,14 +157,16 @@
 
 		const layerStyle = {
 			color: '#6b1a27',
-			weight: 0.8,
+			weight: 0.45,
+			opacity: 0.45,
 			fillColor: '#d4a574',
-			fillOpacity: 0.12
+			fillOpacity: 0.1
 		};
 
 		const hoverStyle = {
-			weight: 1.4,
-			fillOpacity: 0.25
+			weight: 1,
+			opacity: 0.8,
+			fillOpacity: 0.2
 		};
 
 		fetch('databasefiles/limits_IT_municipalities.geojson')
@@ -229,17 +231,23 @@
 
 				const bounds = boundaries.getBounds();
 				map.fitBounds(bounds, {
-					padding: [24, 24],
+					paddingTopLeft: [16, 130],
+					paddingBottomRight: [130, 16],
 					maxZoom: 9
 				});
+
+				// Shift the map slightly southwest to match the desired framing.
+				map.panBy([-36, 48], { animate: false });
 
 				// Recalculate after first paint so the heavy GeoJSON is centered in split views.
 				requestAnimationFrame(() => {
 					map.invalidateSize();
 					map.fitBounds(bounds, {
-						padding: [24, 24],
+						paddingTopLeft: [16, 130],
+						paddingBottomRight: [130, 16],
 						maxZoom: 9
 					});
+					map.panBy([-36, 48], { animate: false });
 				});
 
 				window.addEventListener('resize', () => {

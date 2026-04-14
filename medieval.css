@@ -429,6 +429,13 @@ input:focus, textarea:focus, select:focus {
 
 #italy-map .leaflet-tile {
     outline: 1px solid transparent;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+#italy-map .leaflet-tile-container img {
+    width: 257px !important;
+    height: 257px !important;
 }
 
 #italy-map path {
