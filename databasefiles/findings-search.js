@@ -46,7 +46,8 @@ const COMBINED_HEADERS = [
     'Fiefs',
     'Constable or Count',
     'Contemporary City name',
-    'City and # of Knights Owed',
+    'Modern City Name',
+    '# of Knights Owed',
     'Province'
 ];
 
@@ -153,17 +154,6 @@ function comestabuliaOrComitatus(holding) {
     return 'NA';
 }
 
-function modCommuneWithFeudi(holding) {
-    const commune = clean(holding.Mod_Com_Name);
-    const numberFeudi = clean(holding.Number_Feudi);
-
-    if (commune && numberFeudi) {
-        return `${commune} (${numberFeudi})`;
-    }
-
-    return commune || numberFeudi || 'NA';
-}
-
 function rowSearchText(values) {
     return values.map(normalize).join(' ');
 }
@@ -235,7 +225,8 @@ function combinedRows(lords, holdings) {
             const servientes = clean(lord.Servientes) || 'NA';
             const feudiOwned = clean(lord.Feudi_Owned) || 'NA';
             const comestabuliaValue = comestabuliaOrComitatus(holding);
-            const modCommuneValue = modCommuneWithFeudi(holding);
+            const cityValue = clean(holding.Mod_Com_Name) || 'NA';
+            const knightsOwedValue = clean(holding.Number_Feudi) || 'NA';
             const contComName = clean(holding.Cont_Com_Name) || 'NA';
             const province = clean(holding.Modern_Province) || 'NA';
 
@@ -248,7 +239,8 @@ function combinedRows(lords, holdings) {
                 firstRow ? feudiOwned : '',
                 comestabuliaValue,
                 contComName,
-                modCommuneValue,
+                cityValue,
+                knightsOwedValue,
                 province
             ];
 
@@ -261,7 +253,8 @@ function combinedRows(lords, holdings) {
                 feudiOwned,
                 comestabuliaValue,
                 contComName,
-                modCommuneValue,
+                cityValue,
+                knightsOwedValue,
                 province
             ];
 
