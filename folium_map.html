@@ -249,7 +249,7 @@
         ></iframe>
     </section>
 
-    <p class="map-note">Communes remain unshaded by default. Once you select lords in the chart, communes shade by selected-lord count.</p>
+    <p class="map-note">Communes remain unshaded by default. Once you select lords in the chart, communes shade by selected-lord count, and hover shows lord names with fiefs, knights, and soldiers totals.</p>
 
     <footer class="site-footer">
         <p>
@@ -621,6 +621,31 @@
             return '#d9a084';
         }
 
+        function formatNumber(value) {
+            if (!Number.isFinite(value)) {
+                return '0';
+            }
+            const rounded = Math.round(value * 100) / 100;
+            return Number.isInteger(rounded) ? String(rounded) : String(rounded);
+        }
+
+        function communeTooltipHtml(communeName, stat) {
+            const lords = Array.from(stat.lordNames.values())
+                .sort((a, b) => a.localeCompare(b));
+            const names = lords.map((name) => escapeHtml(name)).join(', ');
+
+            return `
+                <div style="line-height:1.35;max-width:280px;">
+                    <strong>${escapeHtml(communeName)}</strong><br>
+                    <strong>Selected Lords:</strong> ${stat.count}<br>
+                    <strong>Total Fiefs:</strong> ${formatNumber(stat.fiefs)}<br>
+                    <strong>Total Knights:</strong> ${formatNumber(stat.knights)}<br>
+                    <strong>Total Soldiers:</strong> ${formatNumber(stat.soldiers)}<br>
+                    <strong>Lords:</strong> ${names || 'NA'}
+                </div>
+            `;
+        }
+
         function defaultPolygonStyle() {
             return {
                 color: '#6b1a27',
@@ -644,12 +669,20 @@
                         return;
                     }
                     layer.setStyle(defaultPolygonStyle());
+                    layer.off('mouseover');
+                    layer.off('mouseout');
+                    if (layer.closeTooltip) {
+                        layer.closeTooltip();
+                    }
+                    if (layer.unbindTooltip) {
+                        layer.unbindTooltip();
+                    }
                 });
                 setStatus();
                 return;
             }
 
-            const communeCounts = new Map();
+            const communeStats = new Map();
 
             selectedLords.forEach((lord) => {
                 const seenForThisLord = new Set();
@@ -661,14 +694,29 @@
                     }
 
                     seenForThisLord.add(communeKey);
-                    communeCounts.set(communeKey, (communeCounts.get(communeKey) || 0) + 1);
+                    if (!communeStats.has(communeKey)) {
+                        communeStats.set(communeKey, {
+                            count: 0,
+                            fiefs: 0,
+                            knights: 0,
+                            soldiers: 0,
+                            lordNames: new Set()
+                        });
+                    }
+
+                    const stat = communeStats.get(communeKey);
+                    stat.count += 1;
+                    stat.lordNames.add(lord.fullName || `Lord ${lord.lordId}`);
+                    stat.fiefs += parseNumeric(lord.feudiOwned) || 0;
+                    stat.knights += parseNumeric(lord.milites) || 0;
+                    stat.soldiers += parseNumeric(lord.servientes) || 0;
                 });
             });
 
             let maxCount = 0;
-            communeCounts.forEach((count) => {
-                if (count > maxCount) {
-                    maxCount = count;
+            communeStats.forEach((stat) => {
+                if (stat.count > maxCount) {
+                    maxCount = stat.count;
                 }
             });
 
@@ -680,15 +728,45 @@
                 }
 
                 const communeKey = normalize(layer.feature.properties.name);
-                const count = communeCounts.get(communeKey) || 0;
+                const communeName = layer.feature.properties.name || 'Unknown commune';
+                const stat = communeStats.get(communeKey);
 
-                if (count > 0) {
-                    layer.setStyle({
+                layer.off('mouseover');
+                layer.off('mouseout');
+                if (layer.closeTooltip) {
+                    layer.closeTooltip();
+                }
+                if (layer.unbindTooltip) {
+                    layer.unbindTooltip();
+                }
+
+                if (stat && stat.count > 0) {
+                    const activeStyle = {
                         color: '#3d0a15',
                         weight: 1.2,
-                        fillColor: choroplethColor(count, maxCount),
+                        fillColor: choroplethColor(stat.count, maxCount),
                         fillOpacity: 0.8
+                    };
+
+                    layer.setStyle(activeStyle);
+                    layer.bindTooltip(communeTooltipHtml(communeName, stat), {
+                        sticky: true,
+                        direction: 'auto',
+                        opacity: 0.97
                     });
+                    layer.on('mouseover', () => {
+                        layer.setStyle({
+                            color: '#2b0810',
+                            weight: 1.8,
+                            fillColor: activeStyle.fillColor,
+                            fillOpacity: 0.9
+                        });
+                    });
+                    layer.on('mouseout', () => {
+                        // Keep commune selected on hover out; do not reset to default.
+                        layer.setStyle(activeStyle);
+                    });
+
                     if (layer.getBounds) {
                         selectionBounds.extend(layer.getBounds());
                     }
