@@ -27,11 +27,28 @@ const state = {
     onlyMatches: true,
     combinedHidden: false,
     sourcesHidden: true,
+    combinedSort: {
+        columnIndex: 0,
+        direction: 'asc'
+    },
     combinedRows: [],
     sourceLordsRows: [],
     sourceHoldingsRows: [],
     sourceOriginalRows: []
 };
+
+const COMBINED_HEADERS = [
+    'Lord_ID',
+    'Firstname',
+    'Surname',
+    'Total Knights',
+    'Soldiers',
+    'Fiefs',
+    'Constable or Count',
+    'Contemporary City name',
+    'City and # of Knights Owed',
+    'Province'
+];
 
 function clean(value) {
     return String(value ?? '').replace(/\u00A0/g, ' ').trim();
@@ -250,6 +267,7 @@ function combinedRows(lords, holdings) {
 
             rows.push({
                 values: rowValues,
+                sortValues: searchValues,
                 searchText: rowSearchText(searchValues),
                 isContinuation: !firstRow
             });
@@ -273,6 +291,108 @@ function renderTable(headElement, bodyElement, headers, rows, rowClassResolver) 
         const cells = row.values.map((value) => `<td>${escapeHtml(value)}</td>`).join('');
         return `<tr data-row="${index}"${classAttribute}>${cells}</tr>`;
     }).join('');
+}
+
+function parseSortableNumber(value) {
+    const cleaned = clean(value).replace(/,/g, '').replace(/[^0-9.-]/g, '');
+    if (!cleaned) {
+        return null;
+    }
+    const parsed = Number.parseFloat(cleaned);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function sortCompare(aValue, bValue, direction) {
+    const a = clean(aValue);
+    const b = clean(bValue);
+    const aEmpty = !a || normalize(a) === 'na';
+    const bEmpty = !b || normalize(b) === 'na';
+
+    if (aEmpty && bEmpty) {
+        return 0;
+    }
+    if (aEmpty) {
+        return 1;
+    }
+    if (bEmpty) {
+        return -1;
+    }
+
+    const aNumeric = parseSortableNumber(a);
+    const bNumeric = parseSortableNumber(b);
+
+    let result = 0;
+    if (aNumeric !== null && bNumeric !== null) {
+        result = aNumeric - bNumeric;
+    } else {
+        result = a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    }
+
+    return direction === 'asc' ? result : -result;
+}
+
+function sortCombinedRowsInPlace() {
+    const { columnIndex, direction } = state.combinedSort;
+    state.combinedRows.sort((a, b) => {
+        const aValues = Array.isArray(a.sortValues) ? a.sortValues : a.values;
+        const bValues = Array.isArray(b.sortValues) ? b.sortValues : b.values;
+        const primary = sortCompare(aValues[columnIndex], bValues[columnIndex], direction);
+        if (primary !== 0) {
+            return primary;
+        }
+
+        return sortCompare(aValues[0], bValues[0], 'asc');
+    });
+}
+
+function renderCombinedTable() {
+    ui.combinedHead.innerHTML = `<tr>${COMBINED_HEADERS.map((header, index) => {
+        const isActive = state.combinedSort.columnIndex === index;
+        const arrow = isActive
+            ? (state.combinedSort.direction === 'asc' ? '&#8593;' : '&#8595;')
+            : '&#8597;';
+        return `<th><button type="button" class="sortable-header-btn${isActive ? ' is-active' : ''}" data-sort-col="${index}"><span>${escapeHtml(header)}</span><span class="sort-arrow" aria-hidden="true">${arrow}</span></button></th>`;
+    }).join('')}</tr>`;
+
+    if (!state.combinedRows.length) {
+        ui.combinedBody.innerHTML = `<tr><td class="empty-state" colspan="${COMBINED_HEADERS.length}">No rows to display.</td></tr>`;
+        return;
+    }
+
+    ui.combinedBody.innerHTML = state.combinedRows.map((row, index) => {
+        const className = row.isContinuation ? 'lord-continued' : '';
+        const classAttribute = className ? ` class="${className}"` : '';
+        const cells = row.values.map((value) => `<td>${escapeHtml(value)}</td>`).join('');
+        return `<tr data-row="${index}"${classAttribute}>${cells}</tr>`;
+    }).join('');
+}
+
+function onCombinedHeaderSortClick(event) {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+        return;
+    }
+
+    const button = target.closest('button[data-sort-col]');
+    if (!button) {
+        return;
+    }
+
+    const column = Number.parseInt(button.getAttribute('data-sort-col'), 10);
+    if (!Number.isFinite(column)) {
+        return;
+    }
+
+    if (state.combinedSort.columnIndex === column) {
+        state.combinedSort.direction = state.combinedSort.direction === 'asc' ? 'desc' : 'asc';
+    } else {
+        state.combinedSort.columnIndex = column;
+        state.combinedSort.direction = 'asc';
+    }
+
+    sortCombinedRowsInPlace();
+    renderCombinedTable();
+    applyFilter();
 }
 
 function filterTableRows(bodyElement, rows) {
@@ -365,25 +485,9 @@ async function loadAndBuildTables() {
             'Book_ID', 'Original_Text'
         ]);
         state.combinedRows = combinedRows(lordsRecords, holdingsRecords);
+        sortCombinedRowsInPlace();
 
-        renderTable(
-            ui.combinedHead,
-            ui.combinedBody,
-            [
-                'Lord_ID',
-                'Firstname',
-                'Surname',
-                'Total Knights',
-                'Soldiers',
-                'Fiefs',
-                'Constable or Count',
-                'Contemporary City name',
-                'City and # of Knights Owed',
-                'Province'
-            ],
-            state.combinedRows,
-            (row) => (row.isContinuation ? 'lord-continued' : '')
-        );
+        renderCombinedTable();
 
         renderTable(
             ui.lordsHead,
@@ -417,5 +521,6 @@ ui.search.addEventListener('input', applyFilter);
 ui.onlyMatches.addEventListener('change', applyFilter);
 ui.toggleCombined.addEventListener('click', toggleCombinedPanel);
 ui.toggleSources.addEventListener('click', toggleSourcesPanel);
+ui.combinedHead.addEventListener('click', onCombinedHeaderSortClick);
 
 loadAndBuildTables();

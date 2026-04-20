@@ -408,6 +408,40 @@ input:focus, textarea:focus, select:focus {
     display: none;
 }
 
+.sortable-header-btn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    border: none;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    cursor: pointer;
+}
+
+.sortable-header-btn:hover {
+    box-shadow: none;
+    background: transparent;
+    color: #5e1822;
+}
+
+.sortable-header-btn .sort-arrow {
+    color: #8b7355;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.sortable-header-btn.is-active .sort-arrow {
+    color: #6b1a27;
+    font-weight: bold;
+}
+
 /* Map page */
 .map-panel {
     margin: 1rem 0 2rem;
