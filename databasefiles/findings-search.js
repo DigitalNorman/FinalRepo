@@ -231,9 +231,9 @@ function combinedRows(lords, holdings) {
             const province = clean(holding.Modern_Province) || 'NA';
 
             const rowValues = [
-                firstRow ? lordId : '',
-                firstRow ? firstName : '',
-                firstRow ? surname : '',
+                lordId,
+                firstName,
+                surname,
                 firstRow ? milites : '',
                 firstRow ? servientes : '',
                 firstRow ? feudiOwned : '',
