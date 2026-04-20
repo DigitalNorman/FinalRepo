@@ -282,7 +282,7 @@
                 <div class="lord-panel-controls">
                     <button id="lords-select-visible" type="button">Select Visible</button>
                     <button id="lords-clear-selection" type="button">Clear Selection</button>
-                    <button id="lords-toggle-relevance" type="button">Irrelevant Hidden: ON</button>
+                    <button id="lords-toggle-relevance" type="button">Hide Non-highlighted Outlines: ON</button>
                 </div>
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
@@ -345,8 +345,8 @@
 
         function setRelevanceToggleLabel() {
             ui.toggleRelevance.textContent = state.hideIrrelevantMunicipalities
-                ? 'Irrelevant Hidden: ON'
-                : 'Irrelevant Hidden: OFF';
+                ? 'Hide Non-highlighted Outlines: ON'
+                : 'Hide Non-highlighted Outlines: OFF';
         }
 
         function setPanelCollapsed(collapsed) {
@@ -764,8 +764,6 @@
                 return;
             }
 
-            const relevantKeys = relevantCommuneKeys(mapApi);
-
             const selectedLords = state.lords.filter((lord) => state.selectedLordIds.has(lord.lordId));
 
             if (!selectedLords.length) {
@@ -782,8 +780,7 @@
                         layer.unbindTooltip();
                     }
 
-                    const communeKey = normalize(layer.feature?.properties?.name || '');
-                    if (state.hideIrrelevantMunicipalities && !relevantKeys.has(communeKey)) {
+                    if (state.hideIrrelevantMunicipalities) {
                         layer.setStyle(hiddenPolygonStyle());
                         return;
                     }
@@ -913,7 +910,7 @@
                         selectionBounds.extend(layer.getBounds());
                     }
                 } else {
-                    if (state.hideIrrelevantMunicipalities && !relevantKeys.has(communeKey)) {
+                    if (state.hideIrrelevantMunicipalities) {
                         layer.setStyle(hiddenPolygonStyle());
                         return;
                     }
