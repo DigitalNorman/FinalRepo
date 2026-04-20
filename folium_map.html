@@ -473,7 +473,7 @@
 
         function setStatus() {
             const total = selectedTotalKnights();
-            ui.status.textContent = `${state.selectedLordIds.size} selected, ${state.filteredLordIds.length} visible, total knights ${total}, Knights owed from Fief ${formatNumber(state.totalFiefsOwed)}.`;
+            ui.status.textContent = `${state.selectedLordIds.size} selected, ${state.filteredLordIds.length} visible, total knights ${total}, # Knights owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}.`;
         }
 
         function renderLordList() {
@@ -511,7 +511,7 @@
                             <div class="lord-meta">
                                 <p><strong>Milites (Total Knights):</strong> ${escapeHtml(lord.milites)}</p>
                                 <p><strong>Servientes:</strong> ${escapeHtml(lord.servientes)}</p>
-                                <p><strong>Feudi Owned:</strong> ${escapeHtml(lord.feudiOwned)}</p>
+                                <p><strong># of Knights owed:</strong> ${escapeHtml(lord.feudiOwned)}</p>
                                 <p><strong>Sample Holdings:</strong></p>
                                 <ul>${holdingsPreview}${extraCount}</ul>
                             </div>
