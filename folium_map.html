@@ -629,14 +629,14 @@
             return Number.isInteger(rounded) ? String(rounded) : String(rounded);
         }
 
-        function communeTooltipHtml(communeName, stat) {
+        function communeTooltipHtml(stat) {
             const lordIds = Array.from(stat.lordIds.values())
                 .sort((a, b) => lordIdSortValue(a) - lordIdSortValue(b) || a.localeCompare(b));
             const idText = lordIds.map((id) => `<span style="display:inline-block;margin-right:8px;">${escapeHtml(id)}</span>`).join('');
 
             return `
                 <div style="line-height:1.35;max-width:320px;">
-                    <strong>Selected Lords:</strong> ${stat.count}<br>
+                    <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Total Fiefs:</strong> ${formatNumber(stat.fiefs)}<br>
                     <strong>Total Knights:</strong> ${formatNumber(stat.knights)}<br>
                     <strong>Total Soldiers:</strong> ${formatNumber(stat.soldiers)}<br>
@@ -684,18 +684,39 @@
             const communeStats = new Map();
 
             selectedLords.forEach((lord) => {
-                const seenForThisLord = new Set();
+                const lordCommuneFeudi = new Map();
 
                 lord.holdings.forEach((holding) => {
                     const communeKey = resolveHoldingCommuneKey(mapApi, holding);
-                    if (!communeKey || seenForThisLord.has(communeKey)) {
+                    if (!communeKey) {
                         return;
                     }
 
-                    seenForThisLord.add(communeKey);
+                    const feudiAtHolding = parseNumeric(holding.numberFeudi) || 0;
+                    lordCommuneFeudi.set(
+                        communeKey,
+                        (lordCommuneFeudi.get(communeKey) || 0) + feudiAtHolding
+                    );
+                });
+
+                if (!lordCommuneFeudi.size) {
+                    return;
+                }
+
+                let knownFeudiTotal = 0;
+                lordCommuneFeudi.forEach((value) => {
+                    if (value > 0) {
+                        knownFeudiTotal += value;
+                    }
+                });
+
+                const lordKnights = parseNumeric(lord.milites) || 0;
+                const lordSoldiers = parseNumeric(lord.servientes) || 0;
+                const equalShare = 1 / lordCommuneFeudi.size;
+
+                lordCommuneFeudi.forEach((feudiAtCommune, communeKey) => {
                     if (!communeStats.has(communeKey)) {
                         communeStats.set(communeKey, {
-                            count: 0,
                             fiefs: 0,
                             knights: 0,
                             soldiers: 0,
@@ -704,18 +725,22 @@
                     }
 
                     const stat = communeStats.get(communeKey);
-                    stat.count += 1;
                     stat.lordIds.add(lord.lordId);
-                    stat.fiefs += parseNumeric(lord.feudiOwned) || 0;
-                    stat.knights += parseNumeric(lord.milites) || 0;
-                    stat.soldiers += parseNumeric(lord.servientes) || 0;
+                    stat.fiefs += feudiAtCommune;
+
+                    const ratio = knownFeudiTotal > 0
+                        ? ((feudiAtCommune > 0 ? feudiAtCommune : 0) / knownFeudiTotal)
+                        : equalShare;
+
+                    stat.knights += lordKnights * ratio;
+                    stat.soldiers += lordSoldiers * ratio;
                 });
             });
 
             let maxCount = 0;
             communeStats.forEach((stat) => {
-                if (stat.count > maxCount) {
-                    maxCount = stat.count;
+                if (stat.lordIds.size > maxCount) {
+                    maxCount = stat.lordIds.size;
                 }
             });
 
@@ -727,7 +752,6 @@
                 }
 
                 const communeKey = normalize(layer.feature.properties.name);
-                const communeName = layer.feature.properties.name || 'Unknown commune';
                 const stat = communeStats.get(communeKey);
 
                 layer.off('mouseover');
@@ -739,16 +763,16 @@
                     layer.unbindTooltip();
                 }
 
-                if (stat && stat.count > 0) {
+                if (stat && stat.lordIds.size > 0) {
                     const activeStyle = {
                         color: '#3d0a15',
                         weight: 1.2,
-                        fillColor: choroplethColor(stat.count, maxCount),
+                        fillColor: choroplethColor(stat.lordIds.size, maxCount),
                         fillOpacity: 0.8
                     };
 
                     layer.setStyle(activeStyle);
-                    layer.bindTooltip(communeTooltipHtml(communeName, stat), {
+                    layer.bindTooltip(communeTooltipHtml(stat), {
                         sticky: true,
                         direction: 'right',
                         offset: [14, 0],
