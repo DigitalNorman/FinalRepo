@@ -491,7 +491,7 @@
             ui.list.innerHTML = visible.map((lord) => {
                 const checked = state.selectedLordIds.has(lord.lordId) ? 'checked' : '';
                 const holdingsPreview = lord.holdings.slice(0, 6)
-                    .map((holding) => `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} # of knights owed</li>`)
+                    .map((holding) => `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - Knights owed</li>`)
                     .join('');
                 const extraCount = lord.holdings.length > 6
                     ? `<li>+ ${lord.holdings.length - 6} more holdings...</li>`
