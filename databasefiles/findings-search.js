@@ -7,7 +7,6 @@ const FILES = {
 const ui = {
     search: document.getElementById('db-search'),
     onlyMatches: document.getElementById('db-only-matches'),
-    toggleCombined: document.getElementById('db-toggle-combined'),
     toggleSources: document.getElementById('db-toggle-sources'),
     status: document.getElementById('db-status'),
     combinedPanel: document.getElementById('db-combined-panel'),
@@ -25,7 +24,6 @@ const ui = {
 const state = {
     query: '',
     onlyMatches: true,
-    combinedHidden: false,
     sourcesHidden: true,
     combinedSort: {
         columnIndex: 0,
@@ -446,7 +444,7 @@ function filterTableRows(bodyElement, rows) {
 
 function updateStatus(visible, total) {
     const modeText = state.onlyMatches ? 'showing only matching rows' : 'showing all rows';
-    ui.status.textContent = `${visible} of ${total} combined rows visible (${modeText}).`;
+    ui.status.textContent = `${visible} of ${total} database rows visible (${modeText}).`;
 }
 
 function applyFilter() {
@@ -458,12 +456,6 @@ function applyFilter() {
     filterTableRows(ui.holdingsBody, state.sourceHoldingsRows);
     filterTableRows(ui.originalBody, state.sourceOriginalRows);
     updateStatus(visibleCombined, state.combinedRows.length);
-}
-
-function toggleCombinedPanel() {
-    state.combinedHidden = !state.combinedHidden;
-    ui.combinedPanel.classList.toggle('is-hidden', state.combinedHidden);
-    ui.toggleCombined.textContent = state.combinedHidden ? 'Show Combined Table' : 'Hide Combined Table';
 }
 
 function toggleSourcesPanel() {
@@ -541,7 +533,6 @@ async function loadAndBuildTables() {
 
 ui.search.addEventListener('input', applyFilter);
 ui.onlyMatches.addEventListener('change', applyFilter);
-ui.toggleCombined.addEventListener('click', toggleCombinedPanel);
 ui.toggleSources.addEventListener('click', toggleSourcesPanel);
 ui.combinedHead.addEventListener('click', onCombinedHeaderSortClick);
 

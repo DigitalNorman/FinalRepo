@@ -328,8 +328,8 @@
         <ul class="tabs">
             <li><a href="index.html" class="tab-link">Home</a></li>
             <li><a href="folium_map.html" class="tab-link active">Map</a></li>
-            <li><a href="sustainability.html" class="tab-link">Sustainability</a></li>
             <li><a href="findings.html" class="tab-link">Database</a></li>
+            <li><a href="sustainability.html" class="tab-link">Sustainability</a></li>
         </ul>
     </nav>
 
@@ -345,7 +345,7 @@
                 <p>Search by lord ID or name, then select multiple entries.</p>
                 <input id="lord-search" class="lord-search" type="search" placeholder="Search by ID, first name, or surname..." autocomplete="off">
                 <div class="lord-panel-controls">
-                    <button id="lords-select-visible" type="button">Select Visible</button>
+                    <button id="lords-select-visible" type="button">Select all Lords</button>
                     <button id="lords-clear-selection" type="button">Clear Selection</button>
                     <button id="lords-toggle-unassociated" type="button">Hide Unassociated Outlines: OFF</button>
                 </div>
@@ -655,10 +655,10 @@
                         <details>
                             <summary>Show Details</summary>
                             <div class="lord-meta">
-                                <p><strong>Milites (Total Knights):</strong> ${escapeHtml(lord.milites)}</p>
-                                <p><strong>Servientes:</strong> ${escapeHtml(lord.servientes)}</p>
+                                <p><strong>Total Knights:</strong> ${escapeHtml(lord.milites)}</p>
+                                <p><strong>Soldiers:</strong> ${escapeHtml(lord.servientes)}</p>
                                 <p><strong>Number of fiefs:</strong> ${escapeHtml(lord.feudiOwned)}</p>
-                                <p><strong>Sample Holdings:</strong></p>
+                                <p><strong>Fief Location:</strong></p>
                                 <ul>${holdingsPreview}${extraCount}</ul>
                             </div>
                         </details>
