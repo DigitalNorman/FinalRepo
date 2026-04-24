@@ -380,6 +380,10 @@ input:focus, textarea:focus, select:focus {
     margin: 0 0 1.4rem;
 }
 
+.findings-hero-media {
+    position: relative;
+}
+
 .findings-hero-title {
     margin: 0 0 0.9rem;
     border: 0;
@@ -403,6 +407,21 @@ input:focus, textarea:focus, select:focus {
     background: rgba(244, 228, 193, 0.65);
     box-shadow: 0 0 10px rgba(212, 165, 116, 0.3);
     text-align: center;
+}
+
+.findings-hero-caption {
+    position: absolute;
+    right: 0.85rem;
+    bottom: 0.75rem;
+    margin: 0;
+    padding: 0.28rem 0.5rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+    color: #f8efdd;
+    background: rgba(53, 18, 10, 0.68);
+    border-radius: 4px;
+    text-align: right;
+    max-width: min(88%, 520px);
 }
 
 /* Findings database */
