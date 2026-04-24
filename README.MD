@@ -47,7 +47,6 @@ Quick dependency checks:
 - `folium_map_inner.html` - The generated standalone Folium map rendered inside an iframe on the map page.
 - `generate_folium_inner.py` - Python script that regenerates `folium_map_inner.html` from the municipal boundary GeoJSON.
 - `generate_folium_map.py` - Legacy generator that writes to `folium_map.html`.
-- `planning.html` - The planning page with the design notes and planning images.
 - `sustainability.html` - The sustainability page with citations and ways to maintain and operate the website.
 - `medieval.css` - The shared stylesheet for the full site.
 - `databasefiles/findings-search.js` - The JavaScript file that reads the CSV files, combines the data, and controls the findings database.
@@ -85,7 +84,7 @@ The file `databasefiles/Italy_comunes.csv` is currently not part of the map-gene
 2. Keep the folder structure unchanged so the HTML, CSS, CSV, and image files stay in the correct locations.
 3. Open the project folder in Visual Studio Code or another editor.
 4. Use a local web server to view the site. The easiest option is VS Code Live Server.
-5. Open `index.html` or `findings.html` through the local server.
+5. Open `index.html`, `findings.html`, `sustainability.html`, or `folium_map.html` through the local server.
 
 The findings page should be opened through a local server because it loads CSV files with JavaScript and may not work correctly if opened directly from the file system.
 
