@@ -54,9 +54,8 @@ Quick dependency checks:
 - `databasefiles/Final Baronum - Lords and Soldiers.csv` - Source data for lord names and military values.
 - `databasefiles/Final Baronum - Fief Holdings.csv` - Source data for holdings, city names, and province details.
 - `databasefiles/Final Baronum - Original Text.csv` - Source data for the original Latin text.
-- `databasefiles/Italy_comunes.csv` - Legacy supporting geographic data file that is not used by the current Folium map workflow.
 - `databasefiles/limits_IT_municipalities.geojson` - Municipal boundary GeoJSON used to build the Folium map.
-- `images/` - Planning page image assets.
+- `images/` - Image assets.
 
 ## Data Sources
 
