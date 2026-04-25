@@ -347,7 +347,7 @@
                 <div class="lord-panel-controls">
                     <button id="lords-select-visible" type="button">Select all Lords</button>
                     <button id="lords-clear-selection" type="button">Clear Selection</button>
-                    <button id="lords-toggle-unassociated" type="button">Hide Unassociated Outlines: OFF</button>
+                    <button id="lords-toggle-unassociated" type="button">Hide Unassociated Outlines: ON</button>
                 </div>
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
@@ -406,7 +406,7 @@
             mapApi: null,
             totalFiefsOwed: 0,
             isPanelCollapsed: false,
-            hideUnassociatedOutlines: false
+            hideUnassociatedOutlines: true
         };
 
         function setOutlineToggleLabel() {

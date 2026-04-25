@@ -36,12 +36,12 @@ const state = {
 };
 
 const COMBINED_SORTABLE_HEADERS = [
-    'Lord_ID',
+    'Lord ID',
     'Firstname',
     'Surname',
     'Total Knights',
-    'Soldiers',
-    'Fiefs'
+    'Soldeirs',
+    'Fief(s)'
 ];
 
 const COMBINED_HEADERS = [...COMBINED_SORTABLE_HEADERS, 'Details'];
@@ -506,21 +506,21 @@ async function loadAndBuildTables() {
         renderTable(
             ui.lordsHead,
             ui.lordsBody,
-            ['Book_ID', 'Lord_ID', 'Firstname', 'Surname', 'Milites', 'Servientes', 'Feudi_Owned', 'Notes'],
+            ['Book_ID', 'Lord ID', 'Firstname', 'Surname', 'Total Knights', 'Soldeirs', 'Fief(s)', 'Notes'],
             state.sourceLordsRows
         );
 
         renderTable(
             ui.holdingsHead,
             ui.holdingsBody,
-            ['Book_ID', 'Lord_ID', 'Cont_Com_Name', 'Mod_Com_Name', 'Modern_Province', 'Number_Feudi', 'Comitatus', 'Comestabulia', 'Notes'],
+            ['Book_ID', 'Lord ID', 'Contemporary Commune Name', 'Modern Commune Name', 'Modern_Province', '# of knights owed', 'Count', 'Constable', 'Notes'],
             state.sourceHoldingsRows
         );
 
         renderTable(
             ui.originalHead,
             ui.originalBody,
-            ['Book_ID', 'Original_Text'],
+            ['Book_ID', 'Original Text'],
             state.sourceOriginalRows
         );
 
