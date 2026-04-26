@@ -457,6 +457,23 @@
             return Number.isFinite(parsed) ? parsed : null;
         }
 
+        function titleCaseDisplay(value) {
+            const text = clean(value);
+            if (!text) {
+                return '';
+            }
+            if (/^(na|n\/a)$/i.test(text)) {
+                return 'NA';
+            }
+
+            const titled = text
+                .toLowerCase()
+                .replace(/(^|[\s\-\/(])([a-z])/g, (match, prefix, letter) => `${prefix}${letter.toUpperCase()}`)
+                .replace(/'([a-z])/g, (match, letter) => `'${letter.toUpperCase()}`);
+
+            return titled.replace(/\b[ivxlcdm]+\b/gi, (roman) => roman.toUpperCase());
+        }
+
         function parseCSV(csvText) {
             const rows = [];
             let row = [];
@@ -619,7 +636,7 @@
 
         function setStatus() {
             const total = selectedTotalKnights();
-            ui.status.textContent = `${state.selectedLordIds.size} selected, ${state.filteredLordIds.length} Results, total knights ${Math.round(total)}, # Knights owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}.`;
+            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Total Knights ${Math.round(total)}, # Knights Owed From Fief(s) ${formatNumber(state.totalFiefsOwed)}.`;
         }
 
         function renderLordList() {
@@ -637,10 +654,10 @@
             ui.list.innerHTML = visible.map((lord) => {
                 const checked = state.selectedLordIds.has(lord.lordId) ? 'checked' : '';
                 const holdingsPreview = lord.holdings.slice(0, 6)
-                    .map((holding) => `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} Knights owed</li>`)
+                    .map((holding) => `<li>${escapeHtml(titleCaseDisplay(holding.modernCommune))} (${escapeHtml(titleCaseDisplay(holding.province))}) - ${escapeHtml(holding.numberFeudi)} Knights Owed</li>`)
                     .join('');
                 const extraCount = lord.holdings.length > 6
-                    ? `<li>+ ${lord.holdings.length - 6} more holdings...</li>`
+                    ? `<li>+ ${lord.holdings.length - 6} More Holdings...</li>`
                     : '';
 
                 return `
@@ -648,8 +665,8 @@
                         <label class="lord-main">
                             <input type="checkbox" data-role="lord-toggle" data-lord-id="${escapeHtml(lord.lordId)}" ${checked}>
                             <span>
-                                <span class="lord-title">ID ${escapeHtml(lord.lordId)} - ${escapeHtml(lord.fullName)} (${escapeHtml(lord.feudiOwned)} fiefs)</span>
-                                <span class="lord-subtitle">${lord.holdings.length} holdings linked</span>
+                                <span class="lord-title">ID ${escapeHtml(lord.lordId)} - ${escapeHtml(titleCaseDisplay(lord.fullName))} (${escapeHtml(lord.feudiOwned)} Fiefs)</span>
+                                <span class="lord-subtitle">${lord.holdings.length} Holdings Linked</span>
                             </span>
                         </label>
                         <details>
@@ -792,13 +809,15 @@
             return Number.isInteger(rounded) ? String(rounded) : String(rounded);
         }
 
-        function communeTooltipHtml(stat) {
+        function communeTooltipHtml(stat, communeName) {
             const lordIds = Array.from(stat.lordIds.values())
                 .sort((a, b) => lordIdSortValue(a) - lordIdSortValue(b) || a.localeCompare(b));
             const idText = lordIds.map((id) => escapeHtml(id)).join(', ');
+            const formattedCommune = titleCaseDisplay(communeName || 'NA');
 
             return `
                 <div style="line-height:1.35;max-width:320px;">
+                    <strong>Commune:</strong> ${escapeHtml(formattedCommune)}<br>
                     <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
                     <strong>Knights Owed From Fief:</strong> ${formatNumber(stat.fiefKnightsOwed)}
@@ -976,7 +995,7 @@
                     };
 
                     layer.setStyle(activeStyle);
-                    layer.bindTooltip(communeTooltipHtml(stat), {
+                    layer.bindTooltip(communeTooltipHtml(stat, layer.feature.properties.name), {
                         sticky: true,
                         direction: 'right',
                         offset: [14, 0],
