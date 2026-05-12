@@ -26,7 +26,7 @@
             top: 72px;
             left: 14px;
             height: min(620px, calc(100% - 120px));
-            width: min(680px, calc(100% - 28px));
+            width: min(820px, calc(100% - 28px));
             z-index: 500;
             display: flex;
             flex-direction: column;
@@ -1065,7 +1065,7 @@
 
                     const communeKey = normalize(layer.feature?.properties?.name || '');
                     if (state.hideUnassociatedOutlines && !associatedKeys.has(communeKey)) {
-                        layer.setStyle(defaultPolygonStyle());
+                        layer.setStyle(hiddenPolygonStyle());
                     } else {
                         layer.setStyle(defaultPolygonStyle());
                     }
@@ -1214,8 +1214,11 @@
                         selectionBounds.extend(layer.getBounds());
                     }
                 } else {
-                    const defaultStyle = defaultPolygonStyle();
-                    layer.setStyle(defaultStyle);
+                    if (state.hideUnassociatedOutlines && !associatedKeys.has(communeKey)) {
+                        layer.setStyle(hiddenPolygonStyle());
+                    } else {
+                        layer.setStyle(defaultPolygonStyle());
+                    }
                     if (associatedKeys.has(communeKey)) {
                         layer.on('click', () => {
                             selectCommune(mapApi, communeKey);
