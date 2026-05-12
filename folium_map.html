@@ -378,15 +378,15 @@
         <div class="tabs-brand">Digitalizing the Catalogus Baronum</div>
         <ul class="tabs">
             <li><a href="index.html" class="tab-link">Home</a></li>
-            <li><a href="folium_map.html" class="tab-link active">Map</a></li>
             <li><a href="findings.html" class="tab-link">Database</a></li>
+            <li><a href="folium_map.html" class="tab-link active">Map</a></li>
             <li><a href="sustainability.html" class="tab-link">Sustainability</a></li>
         </ul>
     </nav>
 
     <section class="intro-section">
         <p>
-            Select one or more lords from the left panel. Their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. </p>
+            Select one or more lords from the left panel. Their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. The drop down menu shows the superior which these fees are direcly owed and the number of fiefs associated with them. </p>
     </section>
 
     <section class="folium-wrap">
@@ -403,7 +403,7 @@
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
                 <details id="lord-superior-details" class="lord-superior-details" open>
-                    <summary>Fiefs by Superior</summary>
+                    <summary>Distribution of Resources by Superior</summary>
                     <div id="lord-superior-stats" class="lord-superior-stats" aria-live="polite"></div>
                 </details>
             </div>
@@ -718,7 +718,7 @@
         function setStatus() {
             const totalKnights = selectedTotalKnights();
             const totalSoldiers = selectedTotalSoldiers();
-            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Knights before Obligation ${formatNumber(state.totalFiefsOwed)}, Total Knights ${formatNumber(totalKnights)}, Total Soldiers ${formatNumber(totalSoldiers)}.`;
+            ui.status.textContent = `${state.selectedLordIds.size} Selected, Knights Owed Before Obligation ${formatNumber(state.totalFiefsOwed)}, Total Knights ${formatNumber(totalKnights)}, Total Soldiers ${formatNumber(totalSoldiers)}.`;
         }
 
         function renderSuperiorCounts() {
