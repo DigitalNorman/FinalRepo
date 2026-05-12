@@ -175,6 +175,19 @@
             color: #5a4737;
         }
 
+        .lord-superior-stats {
+            margin-top: 0.45rem;
+            padding: 0.45rem 0.6rem;
+            font-size: 0.84rem;
+            color: #4b372a;
+            background: rgba(255,255,255,0.4);
+            border-top: 1px solid rgba(107, 26, 39, 0.06);
+        }
+
+        .lord-panel-controls button {
+            min-width: 110px;
+        }
+
         .lord-meta p {
             margin: 0.18rem 0;
             text-align: left;
@@ -348,9 +361,12 @@
                     <button id="lords-select-visible" type="button">Select all Lords</button>
                     <button id="lords-clear-selection" type="button">Clear Selection</button>
                     <button id="lords-toggle-unassociated" type="button">Hide Unassociated Outlines: ON</button>
+                    <button id="lords-toggle-display" type="button">Display: Knights</button>
+                    <button id="lords-show-both" type="button">Show Both</button>
                 </div>
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
+                <div id="lord-superior-stats" class="lord-superior-stats" aria-live="polite"></div>
             </div>
             <div id="lord-list" class="lord-list"></div>
         </aside>
@@ -389,9 +405,12 @@
             search: document.getElementById('lord-search'),
             list: document.getElementById('lord-list'),
             status: document.getElementById('lord-panel-status'),
+            superiorStats: document.getElementById('lord-superior-stats'),
             selectVisible: document.getElementById('lords-select-visible'),
             clearSelection: document.getElementById('lords-clear-selection'),
             toggleUnassociated: document.getElementById('lords-toggle-unassociated'),
+            toggleDisplay: document.getElementById('lords-toggle-display'),
+            showBoth: document.getElementById('lords-show-both'),
             panelToggle: document.getElementById('lord-panel-toggle'),
             panelRestore: document.getElementById('lord-panel-restore'),
             iframe: document.getElementById('folium-iframe'),
@@ -407,12 +426,25 @@
             totalFiefsOwed: 0,
             isPanelCollapsed: false,
             hideUnassociatedOutlines: true
+            ,displayMode: 'knights' // 'knights' | 'fiefs' | 'both'
         };
 
         function setOutlineToggleLabel() {
             ui.toggleUnassociated.textContent = state.hideUnassociatedOutlines
                 ? 'Hide Unassociated Outlines: ON'
                 : 'Hide Unassociated Outlines: OFF';
+        }
+
+        function setDisplayModeLabel() {
+            if (!ui.toggleDisplay) return;
+            const m = state.displayMode;
+            if (m === 'knights') {
+                ui.toggleDisplay.textContent = 'Display: Knights';
+            } else if (m === 'fiefs') {
+                ui.toggleDisplay.textContent = 'Display: Fiefs';
+            } else {
+                ui.toggleDisplay.textContent = 'Display: Both';
+            }
         }
 
         function setPanelCollapsed(collapsed) {
@@ -622,6 +654,60 @@
             ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Total Knights ${Math.round(total)}, Knights owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}.`;
         }
 
+        function renderSuperiorCounts() {
+            const el = ui.superiorStats;
+            if (!el) return;
+
+            const selectedLords = state.lords.filter((lord) => state.selectedLordIds.has(lord.lordId));
+            if (!selectedLords.length) {
+                el.innerHTML = '<div class="lord-empty">No lords selected.</div>';
+                return;
+            }
+
+            const superiorStats = new Map();
+
+            selectedLords.forEach((lord) => {
+                const knownFeudiTotal = lord.holdings.reduce((s, h) => s + (parseNumeric(h.numberFeudi) || 0), 0);
+                const equalShare = lord.holdings.length ? (1 / lord.holdings.length) : 0;
+
+                lord.holdings.forEach((h) => {
+                    const superior = h.superior || 'NA';
+                    const feudi = parseNumeric(h.numberFeudi) || 0;
+                    const ratio = knownFeudiTotal > 0 ? (feudi > 0 ? (feudi / knownFeudiTotal) : equalShare) : equalShare;
+                    const knightsFromHolding = (parseNumeric(lord.milites) || 0) * ratio;
+
+                    const stat = superiorStats.get(superior) || { knights: 0, fiefs: 0 };
+                    stat.knights += knightsFromHolding;
+                    stat.fiefs += feudi;
+                    superiorStats.set(superior, stat);
+                });
+            });
+
+            const mode = state.displayMode || 'knights';
+            const rows = Array.from(superiorStats.entries())
+                .sort((a, b) => {
+                    const va = mode === 'fiefs' ? a[1].fiefs : a[1].knights;
+                    const vb = mode === 'fiefs' ? b[1].fiefs : b[1].knights;
+                    return vb - va;
+                })
+                .map(([sup, stat]) => {
+                    if (mode === 'knights') {
+                        return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.knights)} knights (${formatNumber(stat.fiefs)} fiefs)</li>`;
+                    }
+                    if (mode === 'fiefs') {
+                        return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs (${formatNumber(stat.knights)} knights)</li>`;
+                    }
+                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.knights)} knights (${formatNumber(stat.fiefs)} fiefs)</li>`;
+                });
+
+            el.innerHTML = `
+                <div class="lord-meta">
+                    <p><strong>Knights owed by Superior:</strong></p>
+                    <ul>${rows.join('') || '<li>None</li>'}</ul>
+                </div>
+            `;
+        }
+
         function renderLordList() {
             const lordsById = new Map(state.lords.map((lord) => [lord.lordId, lord]));
             const visible = state.filteredLordIds
@@ -768,19 +854,19 @@
             return '#d9a084';
         }
 
-        function renderLegend(maxFiefOwed, hasSelection) {
+        function renderLegend(maxValue, hasSelection, mode) {
             if (!ui.legend) {
                 return;
             }
-
+            const metric = mode === 'fiefs' ? 'Fiefs' : 'Knights';
             ui.legend.innerHTML = `
                 <h3>Map Legend</h3>
-                <p class="legend-subtitle">Color shows how many knights are owed from fiefs in each commune.</p>
+                <p class="legend-subtitle">Color shows how many ${metric.toLowerCase()} are owed in each commune.</p>
                 <div class="legend-scale">
                     <div class="legend-gradient"></div>
                     <div class="legend-gradient-label">Least owed to most owed</div>
                 </div>
-                <p class="legend-note">${hasSelection && Number.isFinite(maxFiefOwed) && maxFiefOwed > 0 ? 'Darker red means more is owed.' : 'Select one or more lords to activate shading.'}</p>
+                <p class="legend-note">${hasSelection && Number.isFinite(maxValue) && maxValue > 0 ? 'Darker red means more is owed.' : 'Select one or more lords to activate shading.'}</p>
             `;
         }
 
@@ -801,7 +887,9 @@
                 <div style="line-height:1.35;max-width:320px;">
                     <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
-                    <strong>Knights Owed From Fief:</strong> ${formatNumber(stat.fiefKnightsOwed)}
+                    <strong>Fiefs at Commune:</strong> ${formatNumber(stat.fiefKnightsOwed)}<br>
+                    <strong>Estimated Knights:</strong> ${formatNumber(stat.knights)}<br>
+                    <strong>Estimated Soldiers:</strong> ${formatNumber(stat.soldiers)}
                 </div>
             `;
         }
@@ -873,7 +961,7 @@
 
                     layer.setStyle(defaultPolygonStyle());
                 });
-                renderLegend(0, false);
+                renderLegend(0, false, state.displayMode);
                 setStatus();
                 return;
             }
@@ -939,10 +1027,12 @@
                 });
             });
 
-            let maxFiefOwed = 0;
+            const metricKey = state.displayMode === 'fiefs' ? 'fiefKnightsOwed' : 'knights';
+            let maxMetric = 0;
             communeStats.forEach((stat) => {
-                if (stat.fiefKnightsOwed > maxFiefOwed) {
-                    maxFiefOwed = stat.fiefKnightsOwed;
+                const v = stat[metricKey] || 0;
+                if (v > maxMetric) {
+                    maxMetric = v;
                 }
             });
 
@@ -966,12 +1056,12 @@
                 }
 
                 if (stat && stat.lordIds.size > 0) {
-                    const fillValue = stat.fiefKnightsOwed;
+                    const fillValue = stat[metricKey] || 0;
                     const activeStyle = {
                         color: '#3d0a15',
                         weight: 1.2,
                         opacity: 1,
-                        fillColor: choroplethColor(fillValue, maxFiefOwed),
+                        fillColor: choroplethColor(fillValue, maxMetric),
                         fillOpacity: 0.8
                     };
 
@@ -1016,8 +1106,9 @@
                 state.totalFiefsOwed += stat.fiefKnightsOwed;
             });
 
-            renderLegend(maxFiefOwed, selectedLords.length > 0);
+            renderLegend(maxMetric, selectedLords.length > 0, state.displayMode);
             setStatus();
+            renderSuperiorCounts();
         }
 
         function bindUI() {
@@ -1052,6 +1143,25 @@
                 setOutlineToggleLabel();
                 applyMapSelection();
             });
+
+            if (ui.toggleDisplay) {
+                ui.toggleDisplay.addEventListener('click', () => {
+                    // toggle between knights and fiefs
+                    state.displayMode = state.displayMode === 'knights' ? 'fiefs' : 'knights';
+                    setDisplayModeLabel();
+                    renderSuperiorCounts();
+                    applyMapSelection();
+                });
+            }
+
+            if (ui.showBoth) {
+                ui.showBoth.addEventListener('click', () => {
+                    state.displayMode = 'both';
+                    setDisplayModeLabel();
+                    renderSuperiorCounts();
+                    applyMapSelection();
+                });
+            }
 
             ui.list.addEventListener('change', (event) => {
                 const target = event.target;
@@ -1104,7 +1214,8 @@
             state.lords = buildLordData(lordsRows, holdingsRows);
             state.filteredLordIds = state.lords.map((lord) => lord.lordId);
             setOutlineToggleLabel();
-            renderLegend(0, false);
+            setDisplayModeLabel();
+            renderLegend(0, false, state.displayMode);
             setStatus();
             renderLordList();
             applyMapSelection();
