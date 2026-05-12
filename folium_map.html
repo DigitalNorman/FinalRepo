@@ -1014,7 +1014,7 @@
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
                     <strong>Knights Owed Before Obligation:</strong> ${formatNumber(stat.fiefKnightsOwed)}
                     <br><strong>Total Knights:</strong> ${formatNumber(stat.totalKnights)}
-                    <br><strong>Soldiers:</strong> ${formatNumber(stat.totalSoldiers)}
+                    <br><strong>Soldiers:</strong> ${formatNumber(stat.soldiersFromBooks)}
                 </div>
             `;
         }
@@ -1102,7 +1102,6 @@
 
             selectedLords.forEach((lord) => {
                 const lordCommuneFeudi = new Map();
-                const lordSoldiers = parseNumeric(lord.servientes) || 0;
                 const lordKnights = parseNumeric(lord.milites) || 0;
 
                 lord.holdings.forEach((holding) => {
@@ -1128,6 +1127,8 @@
                         communeStats.set(communeKey, {
                             fiefKnightsOwed: 0,
                             lordIds: new Set(),
+                            bookIds: new Set(),
+                            soldiersFromBooks: 0,
                             totalSoldiers: 0,
                             totalKnights: 0
                         });
@@ -1136,10 +1137,19 @@
                     const stat = communeStats.get(communeKey);
                     if (!stat.lordIds.has(lord.lordId)) {
                         stat.lordIds.add(lord.lordId);
-                        stat.totalSoldiers += lordSoldiers;
                         stat.totalKnights += lordKnights;
                     }
                     stat.fiefKnightsOwed += feudiAtCommune;
+
+                    const bookId = holding.bookId;
+                    if (bookId && bookId !== 'NA' && !stat.bookIds.has(bookId)) {
+                        stat.bookIds.add(bookId);
+                        const soldiers = bookServMap.get(bookId);
+                        if (soldiers != null) {
+                            stat.soldiersFromBooks += soldiers;
+                            stat.totalSoldiers = stat.soldiersFromBooks;
+                        }
+                    }
                 });
             });
 
