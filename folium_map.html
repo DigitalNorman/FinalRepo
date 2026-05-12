@@ -26,7 +26,7 @@
             top: 72px;
             left: 14px;
             height: min(620px, calc(100% - 120px));
-            width: min(520px, calc(100% - 28px));
+            width: min(680px, calc(100% - 28px));
             z-index: 500;
             display: flex;
             flex-direction: column;
@@ -182,6 +182,25 @@
             color: #4b372a;
             background: rgba(255,255,255,0.4);
             border-top: 1px solid rgba(107, 26, 39, 0.06);
+        }
+
+        .lord-superior-details {
+            margin-top: 0.5rem;
+        }
+
+        .lord-superior-details summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #5a3730;
+            padding: 0.35rem 0.6rem;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.6);
+            list-style: none;
+            border: 1px solid rgba(107,26,39,0.06);
+        }
+
+        .lord-superior-details[open] .lord-superior-stats {
+            display: block;
         }
 
         .lord-panel-controls button {
@@ -364,7 +383,10 @@
                 </div>
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
-                <div id="lord-superior-stats" class="lord-superior-stats" aria-live="polite"></div>
+                <details id="lord-superior-details" class="lord-superior-details" open>
+                    <summary>Fiefs by Superior</summary>
+                    <div id="lord-superior-stats" class="lord-superior-stats" aria-live="polite"></div>
+                </details>
             </div>
             <div id="lord-list" class="lord-list"></div>
         </aside>
@@ -564,6 +586,7 @@
                         servientes: clean(row.Servientes) || 'NA',
                         feudiOwned: clean(row.Feudi_Owned) || 'NA',
                         totalKnights: parseNumeric(row.Milites),
+                        totalSoldiers: parseNumeric(row.Servientes),
                         holdings: []
                     });
                 }
@@ -648,8 +671,22 @@
                 .map((lord) => lord.lordId);
         }
 
+        function selectedTotalKnights() {
+            return state.lords
+                .filter((lord) => state.selectedLordIds.has(lord.lordId))
+                .reduce((sum, lord) => sum + (parseNumeric(lord.milites) || 0), 0);
+        }
+
+        function selectedTotalSoldiers() {
+            return state.lords
+                .filter((lord) => state.selectedLordIds.has(lord.lordId))
+                .reduce((sum, lord) => sum + (parseNumeric(lord.servientes) || 0), 0);
+        }
+
         function setStatus() {
-            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Total Fiefs ${formatNumber(state.totalFiefsOwed)}.`;
+            const totalKnights = selectedTotalKnights();
+            const totalSoldiers = selectedTotalSoldiers();
+            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Knights Owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}, Total Knights ${formatNumber(totalKnights)}, Total Soldiers ${formatNumber(totalSoldiers)}.`;
         }
 
         function renderSuperiorCounts() {
@@ -662,6 +699,7 @@
                 return;
             }
 
+            // Compute exact fief counts per superior and present knights owed from those fiefs (exact, not estimated)
             const superiorStats = new Map();
 
             selectedLords.forEach((lord) => {
@@ -674,7 +712,6 @@
                 });
             });
 
-            // Render superior stats as counts of fiefs only (no knight/soldier estimates)
             const rows = Array.from(superiorStats.entries())
                 .sort((a, b) => b[1].fiefs - a[1].fiefs)
                 .map(([sup, stat]) => `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs</li>`);
@@ -682,6 +719,7 @@
             el.innerHTML = `
                 <div class="lord-meta">
                     <p><strong>Fiefs by Superior:</strong></p>
+                    <p>Counts are based on the fief rows tied to each superior, so they are not doubled across lords.</p>
                     <ul>${rows.join('') || '<li>None</li>'}</ul>
                 </div>
             `;

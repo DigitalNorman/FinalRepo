@@ -41,7 +41,8 @@ const COMBINED_SORTABLE_HEADERS = [
     'Surname',
     'Total Knights',
     'Soldiers',
-    'Fief(s)'
+    'Fief(s)',
+    'Superior'
 ];
 
 const COMBINED_HEADERS = [...COMBINED_SORTABLE_HEADERS, 'Details'];
@@ -149,6 +150,40 @@ function comestabuliaOrComitatus(holding) {
     return 'NA';
 }
 
+function superiorDisplayValues(holding) {
+    const values = [];
+
+    const comestabulia = clean(holding.Comestabulia);
+    if (comestabulia && normalize(comestabulia) !== 'na') {
+        values.push(comestabulia);
+    }
+
+    const comitatus = clean(holding.Comitatus);
+    if (comitatus && normalize(comitatus) !== 'na') {
+        values.push('Self');
+    }
+
+    return values;
+}
+
+function uniqueSuperiorText(holdings) {
+    const seen = new Set();
+    const values = [];
+
+    holdings.forEach((holding) => {
+        superiorDisplayValues(holding).forEach((value) => {
+            const key = normalize(value);
+            if (!key || seen.has(key)) {
+                return;
+            }
+            seen.add(key);
+            values.push(value);
+        });
+    });
+
+    return values.length ? values.join('; ') : 'NA';
+}
+
 function rowSearchText(values) {
     return values.map(normalize).join(' ');
 }
@@ -221,6 +256,8 @@ function combinedRows(lords, holdings) {
             province: clean(holding.Modern_Province) || 'NA'
         }));
 
+        const superiorText = uniqueSuperiorText(relatedHoldings);
+
         const detailSearch = detailRows.flatMap((detail) => [
             detail.constableOrCount,
             detail.contemporaryCity,
@@ -235,7 +272,8 @@ function combinedRows(lords, holdings) {
             surname,
             milites,
             servientes,
-            feudiOwned
+            feudiOwned,
+            superiorText
         ];
 
         const searchValues = [
@@ -245,6 +283,7 @@ function combinedRows(lords, holdings) {
             milites,
             servientes,
             feudiOwned,
+            superiorText,
             ...detailSearch
         ];
 
