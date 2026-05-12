@@ -160,7 +160,11 @@ function superiorDisplayValues(holding) {
 
     const comitatus = clean(holding.Comitatus);
     if (comitatus && normalize(comitatus) !== 'na') {
-        values.push(comitatus);
+        // Convert specific comitatus entries to "Self"
+        const displayComitatus = (normalize(comitatus).includes('comitatus gravine') || normalize(comitatus).includes('comitatus andrie'))
+            ? 'Self'
+            : comitatus;
+        values.push(displayComitatus);
     }
 
     return values;

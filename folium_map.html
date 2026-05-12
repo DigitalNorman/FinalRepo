@@ -178,7 +178,7 @@
         .lord-superior-stats {
             margin-top: 0.45rem;
             padding: 0.45rem 0.6rem;
-            font-size: 0.84rem;
+            font-size: 0.76rem;
             color: #4b372a;
             background: rgba(255,255,255,0.4);
             border-top: 1px solid rgba(107, 26, 39, 0.06);
@@ -705,7 +705,7 @@
         function setStatus() {
             const totalKnights = selectedTotalKnights();
             const totalSoldiers = selectedTotalSoldiers();
-            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Knights Owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}, Total Knights ${formatNumber(totalKnights)}, Total Soldiers ${formatNumber(totalSoldiers)}.`;
+            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Knights before Obligation ${formatNumber(state.totalFiefsOwed)}, Total Knights ${formatNumber(totalKnights)}, Total Soldiers ${formatNumber(totalSoldiers)}.`;
         }
 
         function renderSuperiorCounts() {
@@ -747,8 +747,6 @@
 
             el.innerHTML = `
                 <div class="lord-meta">
-                    <p><strong>Fiefs by Superior:</strong></p>
-                    <p>Counts are based on the fief rows tied to each superior. Lord totals are listed once per superior, even when a lord has multiple matching holdings.</p>
                     <ul>${rows.join('') || '<li>None</li>'}</ul>
                 </div>
             `;
