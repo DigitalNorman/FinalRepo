@@ -26,7 +26,7 @@
             top: 72px;
             left: 14px;
             height: min(620px, calc(100% - 120px));
-            width: min(380px, calc(100% - 28px));
+            width: min(520px, calc(100% - 28px));
             z-index: 500;
             display: flex;
             flex-direction: column;
@@ -361,8 +361,6 @@
                     <button id="lords-select-visible" type="button">Select all Lords</button>
                     <button id="lords-clear-selection" type="button">Clear Selection</button>
                     <button id="lords-toggle-unassociated" type="button">Hide Unassociated Outlines: ON</button>
-                    <button id="lords-toggle-display" type="button">Display: Knights</button>
-                    <button id="lords-show-both" type="button">Show Both</button>
                 </div>
                 <button id="lord-panel-toggle" class="lord-panel-toggle" type="button" aria-expanded="true" aria-label="Minimize table" title="Minimize table">X</button>
                 <div id="lord-panel-status" class="lord-panel-status" aria-live="polite">Loading lord data...</div>
@@ -409,8 +407,7 @@
             selectVisible: document.getElementById('lords-select-visible'),
             clearSelection: document.getElementById('lords-clear-selection'),
             toggleUnassociated: document.getElementById('lords-toggle-unassociated'),
-            toggleDisplay: document.getElementById('lords-toggle-display'),
-            showBoth: document.getElementById('lords-show-both'),
+            
             panelToggle: document.getElementById('lord-panel-toggle'),
             panelRestore: document.getElementById('lord-panel-restore'),
             iframe: document.getElementById('folium-iframe'),
@@ -426,7 +423,7 @@
             totalFiefsOwed: 0,
             isPanelCollapsed: false,
             hideUnassociatedOutlines: true
-            ,displayMode: 'knights' // 'knights' | 'fiefs' | 'both'
+            
         };
 
         function setOutlineToggleLabel() {
@@ -435,17 +432,7 @@
                 : 'Hide Unassociated Outlines: OFF';
         }
 
-        function setDisplayModeLabel() {
-            if (!ui.toggleDisplay) return;
-            const m = state.displayMode;
-            if (m === 'knights') {
-                ui.toggleDisplay.textContent = 'Display: Knights';
-            } else if (m === 'fiefs') {
-                ui.toggleDisplay.textContent = 'Display: Fiefs';
-            } else {
-                ui.toggleDisplay.textContent = 'Display: Both';
-            }
-        }
+        
 
         function setPanelCollapsed(collapsed) {
             state.isPanelCollapsed = Boolean(collapsed);
@@ -603,9 +590,25 @@
 
                 const comestabulia = clean(row.Comestabulia);
                 const comitatus = clean(row.Comitatus);
-                const superior = comestabulia && normalize(comestabulia) !== 'na'
+                let superior = comestabulia && normalize(comestabulia) !== 'na'
                     ? comestabulia
                     : (comitatus && normalize(comitatus) !== 'na' ? comitatus : 'NA');
+
+                // Map certain comitatus names to their Comes holders so comitatus
+                // are not shown as separate superiors; their fiefs are attributed
+                // to the appropriate Comes.
+                const COMITATUS_TO_COMES = {
+                    'andrie': 'Comes Berteraymus Andrie',
+                    'gravine': 'Comes Gilbertus de Gravina',
+                    'gravina': 'Comes Gilbertus de Gravina'
+                };
+                const sNorm = normalize(superior || '');
+                for (const key of Object.keys(COMITATUS_TO_COMES)) {
+                    if (sNorm.includes(key)) {
+                        superior = COMITATUS_TO_COMES[key];
+                        break;
+                    }
+                }
 
                 byId.get(id).holdings.push({
                     medievalCommune: clean(row.Cont_Com_Name) || 'NA',
@@ -625,11 +628,7 @@
             });
         }
 
-        function selectedTotalKnights() {
-            return state.lords
-                .filter((lord) => state.selectedLordIds.has(lord.lordId))
-                .reduce((sum, lord) => sum + (lord.totalKnights || 0), 0);
-        }
+        
 
         function filterLords() {
             const query = normalize(state.query);
@@ -650,8 +649,7 @@
         }
 
         function setStatus() {
-            const total = selectedTotalKnights();
-            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Total Knights ${Math.round(total)}, Knights owed from Fief(s) ${formatNumber(state.totalFiefsOwed)}.`;
+            ui.status.textContent = `${state.selectedLordIds.size} Selected, ${state.filteredLordIds.length} Results, Total Fiefs ${formatNumber(state.totalFiefsOwed)}.`;
         }
 
         function renderSuperiorCounts() {
@@ -667,42 +665,23 @@
             const superiorStats = new Map();
 
             selectedLords.forEach((lord) => {
-                const knownFeudiTotal = lord.holdings.reduce((s, h) => s + (parseNumeric(h.numberFeudi) || 0), 0);
-                const equalShare = lord.holdings.length ? (1 / lord.holdings.length) : 0;
-
                 lord.holdings.forEach((h) => {
                     const superior = h.superior || 'NA';
                     const feudi = parseNumeric(h.numberFeudi) || 0;
-                    const ratio = knownFeudiTotal > 0 ? (feudi > 0 ? (feudi / knownFeudiTotal) : equalShare) : equalShare;
-                    const knightsFromHolding = (parseNumeric(lord.milites) || 0) * ratio;
-
-                    const stat = superiorStats.get(superior) || { knights: 0, fiefs: 0 };
-                    stat.knights += knightsFromHolding;
+                    const stat = superiorStats.get(superior) || { fiefs: 0 };
                     stat.fiefs += feudi;
                     superiorStats.set(superior, stat);
                 });
             });
 
-            const mode = state.displayMode || 'knights';
+            // Render superior stats as counts of fiefs only (no knight/soldier estimates)
             const rows = Array.from(superiorStats.entries())
-                .sort((a, b) => {
-                    const va = mode === 'fiefs' ? a[1].fiefs : a[1].knights;
-                    const vb = mode === 'fiefs' ? b[1].fiefs : b[1].knights;
-                    return vb - va;
-                })
-                .map(([sup, stat]) => {
-                    if (mode === 'knights') {
-                        return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.knights)} knights (${formatNumber(stat.fiefs)} fiefs)</li>`;
-                    }
-                    if (mode === 'fiefs') {
-                        return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs (${formatNumber(stat.knights)} knights)</li>`;
-                    }
-                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.knights)} knights (${formatNumber(stat.fiefs)} fiefs)</li>`;
-                });
+                .sort((a, b) => b[1].fiefs - a[1].fiefs)
+                .map(([sup, stat]) => `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs</li>`);
 
             el.innerHTML = `
                 <div class="lord-meta">
-                    <p><strong>Knights owed by Superior:</strong></p>
+                    <p><strong>Fiefs by Superior:</strong></p>
                     <ul>${rows.join('') || '<li>None</li>'}</ul>
                 </div>
             `;
@@ -723,7 +702,11 @@
             ui.list.innerHTML = visible.map((lord) => {
                 const checked = state.selectedLordIds.has(lord.lordId) ? 'checked' : '';
                 const holdingsPreview = lord.holdings.slice(0, 6)
-                    .map((holding) => `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} Knights owed</li>`)
+                    .map((holding) => {
+                        const supNorm = normalize(holding.superior || '');
+                        const displaySup = supNorm.includes('comit') ? 'Self' : (holding.superior || 'NA');
+                        return `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} fiefs — Superior: ${escapeHtml(displaySup)}</li>`;
+                    })
                     .join('');
                 const extraCount = lord.holdings.length > 6
                     ? `<li>+ ${lord.holdings.length - 6} more holdings...</li>`
@@ -741,10 +724,8 @@
                         <details>
                             <summary>Show Details</summary>
                             <div class="lord-meta">
-                                <p><strong>Total Knights:</strong> ${escapeHtml(lord.milites)}</p>
-                                <p><strong>Soldiers:</strong> ${escapeHtml(lord.servientes)}</p>
                                 <p><strong>Number of Fiefs:</strong> ${escapeHtml(lord.feudiOwned)}</p>
-                                <p><strong>Fief Location:</strong></p>
+                                <p><strong>Fief Location & Superior:</strong></p>
                                 <ul>${holdingsPreview}${extraCount}</ul>
                             </div>
                         </details>
@@ -854,19 +835,18 @@
             return '#d9a084';
         }
 
-        function renderLegend(maxValue, hasSelection, mode) {
+        function renderLegend(maxValue, hasSelection) {
             if (!ui.legend) {
                 return;
             }
-            const metric = mode === 'fiefs' ? 'Fiefs' : 'Knights';
             ui.legend.innerHTML = `
                 <h3>Map Legend</h3>
-                <p class="legend-subtitle">Color shows how many ${metric.toLowerCase()} are owed in each commune.</p>
+                <p class="legend-subtitle">Color shows how many fiefs are present in each commune.</p>
                 <div class="legend-scale">
                     <div class="legend-gradient"></div>
-                    <div class="legend-gradient-label">Least owed to most owed</div>
+                    <div class="legend-gradient-label">Least fiefs to most fiefs</div>
                 </div>
-                <p class="legend-note">${hasSelection && Number.isFinite(maxValue) && maxValue > 0 ? 'Darker red means more is owed.' : 'Select one or more lords to activate shading.'}</p>
+                <p class="legend-note">${hasSelection && Number.isFinite(maxValue) && maxValue > 0 ? 'Darker red means more fiefs.' : 'Select one or more lords to activate shading.'}</p>
             `;
         }
 
@@ -887,9 +867,7 @@
                 <div style="line-height:1.35;max-width:320px;">
                     <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
-                    <strong>Fiefs at Commune:</strong> ${formatNumber(stat.fiefKnightsOwed)}<br>
-                    <strong>Estimated Knights:</strong> ${formatNumber(stat.knights)}<br>
-                    <strong>Estimated Soldiers:</strong> ${formatNumber(stat.soldiers)}
+                    <strong>Fiefs at Commune:</strong> ${formatNumber(stat.fiefKnightsOwed)}
                 </div>
             `;
         }
@@ -961,7 +939,7 @@
 
                     layer.setStyle(defaultPolygonStyle());
                 });
-                renderLegend(0, false, state.displayMode);
+                renderLegend(0, false);
                 setStatus();
                 return;
             }
@@ -988,46 +966,22 @@
                     return;
                 }
 
-                let knownFeudiTotal = 0;
-                lordCommuneFeudi.forEach((value) => {
-                    if (value > 0) {
-                        knownFeudiTotal += value;
-                    }
-                });
-
-                const lordKnights = parseNumeric(lord.milites) || 0;
-                const lordSoldiers = parseNumeric(lord.servientes) || 0;
-                const equalShare = 1 / lordCommuneFeudi.size;
-
+                // For this simplified view we only aggregate fief counts per commune.
                 lordCommuneFeudi.forEach((feudiAtCommune, communeKey) => {
                     if (!communeStats.has(communeKey)) {
                         communeStats.set(communeKey, {
                             fiefKnightsOwed: 0,
-                            knights: 0,
-                            soldiers: 0,
-                            lordIds: new Set(),
-                            lordsWithKnights: new Set()
+                            lordIds: new Set()
                         });
                     }
 
                     const stat = communeStats.get(communeKey);
                     stat.lordIds.add(lord.lordId);
                     stat.fiefKnightsOwed += feudiAtCommune;
-
-                    const ratio = knownFeudiTotal > 0
-                        ? ((feudiAtCommune > 0 ? feudiAtCommune : 0) / knownFeudiTotal)
-                        : equalShare;
-
-                    stat.knights += lordKnights * ratio;
-                    stat.soldiers += lordSoldiers * ratio;
-
-                    if ((lordKnights * ratio) > 0) {
-                        stat.lordsWithKnights.add(lord.lordId);
-                    }
                 });
             });
 
-            const metricKey = state.displayMode === 'fiefs' ? 'fiefKnightsOwed' : 'knights';
+            const metricKey = 'fiefKnightsOwed';
             let maxMetric = 0;
             communeStats.forEach((stat) => {
                 const v = stat[metricKey] || 0;
@@ -1106,7 +1060,7 @@
                 state.totalFiefsOwed += stat.fiefKnightsOwed;
             });
 
-            renderLegend(maxMetric, selectedLords.length > 0, state.displayMode);
+            renderLegend(maxMetric, selectedLords.length > 0);
             setStatus();
             renderSuperiorCounts();
         }
@@ -1144,24 +1098,7 @@
                 applyMapSelection();
             });
 
-            if (ui.toggleDisplay) {
-                ui.toggleDisplay.addEventListener('click', () => {
-                    // toggle between knights and fiefs
-                    state.displayMode = state.displayMode === 'knights' ? 'fiefs' : 'knights';
-                    setDisplayModeLabel();
-                    renderSuperiorCounts();
-                    applyMapSelection();
-                });
-            }
-
-            if (ui.showBoth) {
-                ui.showBoth.addEventListener('click', () => {
-                    state.displayMode = 'both';
-                    setDisplayModeLabel();
-                    renderSuperiorCounts();
-                    applyMapSelection();
-                });
-            }
+            // display toggle removed per user request
 
             ui.list.addEventListener('change', (event) => {
                 const target = event.target;
@@ -1214,8 +1151,7 @@
             state.lords = buildLordData(lordsRows, holdingsRows);
             state.filteredLordIds = state.lords.map((lord) => lord.lordId);
             setOutlineToggleLabel();
-            setDisplayModeLabel();
-            renderLegend(0, false, state.displayMode);
+            renderLegend(0, false);
             setStatus();
             renderLordList();
             applyMapSelection();
