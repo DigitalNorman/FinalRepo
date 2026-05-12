@@ -895,14 +895,18 @@
         function associatedCommuneKeys(mapApi) {
             const keys = new Set();
 
-            state.lords.forEach((lord) => {
-                lord.holdings.forEach((holding) => {
-                    const communeKey = resolveHoldingCommuneKey(mapApi, holding);
-                    if (communeKey) {
-                        keys.add(communeKey);
-                    }
+            // Only include communes from currently selected lords so that
+            // hiding unassociated outlines respects the active selection.
+            state.lords
+                .filter((lord) => state.selectedLordIds.has(lord.lordId))
+                .forEach((lord) => {
+                    lord.holdings.forEach((holding) => {
+                        const communeKey = resolveHoldingCommuneKey(mapApi, holding);
+                        if (communeKey) {
+                            keys.add(communeKey);
+                        }
+                    });
                 });
-            });
 
             return keys;
         }
