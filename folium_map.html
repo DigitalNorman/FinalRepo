@@ -943,8 +943,11 @@
 
                     layer.setStyle(defaultPolygonStyle());
                 });
+                // Reset totals and UI when nothing is selected
+                state.totalFiefsOwed = 0;
                 renderLegend(0, false);
                 setStatus();
+                renderSuperiorCounts();
                 return;
             }
             
