@@ -386,7 +386,7 @@
 
     <section class="intro-section">
         <p>
-            Select one or more lords from the left panel. Their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. The drop down menu shows the superior which these fees are direcly owed and the number of fiefs associated with them. </p>
+            Select one or more lords from the left panel. Their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. The drop down menu shows the superior which these fees are direcly owed and the number of fiefs associated with them. Click on a commune to select all lords with holdings in that commune. </p>
     </section>
 
     <section class="folium-wrap">
@@ -1055,7 +1055,7 @@
                     }
                     layer.off('mouseover');
                     layer.off('mouseout');
-                        layer.off('click');
+                    layer.off('click');
                     if (layer.closeTooltip) {
                         layer.closeTooltip();
                     }
@@ -1065,11 +1065,16 @@
 
                     const communeKey = normalize(layer.feature?.properties?.name || '');
                     if (state.hideUnassociatedOutlines && !associatedKeys.has(communeKey)) {
-                        layer.setStyle(hiddenPolygonStyle());
-                        return;
+                        layer.setStyle(defaultPolygonStyle());
+                    } else {
+                        layer.setStyle(defaultPolygonStyle());
                     }
 
-                    layer.setStyle(defaultPolygonStyle());
+                    if (associatedKeys.has(communeKey)) {
+                        layer.on('click', () => {
+                            selectCommune(mapApi, communeKey);
+                        });
+                    }
                 });
                 // Reset totals and UI when nothing is selected
                 state.totalFiefsOwed = 0;
@@ -1209,10 +1214,6 @@
                         selectionBounds.extend(layer.getBounds());
                     }
                 } else {
-                    if (state.hideUnassociatedOutlines && !associatedKeys.has(communeKey)) {
-                        layer.setStyle(hiddenPolygonStyle());
-                        return;
-                    }
                     const defaultStyle = defaultPolygonStyle();
                     layer.setStyle(defaultStyle);
                     if (associatedKeys.has(communeKey)) {
