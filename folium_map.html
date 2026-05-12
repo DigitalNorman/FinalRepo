@@ -718,22 +718,23 @@
                 return;
             }
 
-            // Compute exact fief counts per superior and dedupe lord-level totals per superior.
+            // Compute fief entry counts and knights owed per superior, and dedupe lord-level totals per superior.
             const superiorStats = new Map();
 
             selectedLords.forEach((lord) => {
                 lord.holdings.forEach((h) => {
                     const superior = h.superior || 'NA';
                     const feudi = parseNumeric(h.numberFeudi) || 0;
-                    const stat = superiorStats.get(superior) || { fiefs: 0, lordIds: new Set() };
-                    stat.fiefs += feudi;
+                    const stat = superiorStats.get(superior) || { knightsOwed: 0, numberOfFiefs: 0, lordIds: new Set() };
+                    stat.knightsOwed += feudi;
+                    stat.numberOfFiefs += 1;
                     stat.lordIds.add(lord.lordId);
                     superiorStats.set(superior, stat);
                 });
             });
 
             const rows = Array.from(superiorStats.entries())
-                .sort((a, b) => b[1].fiefs - a[1].fiefs)
+                .sort((a, b) => b[1].knightsOwed - a[1].knightsOwed)
                 .map(([sup, stat]) => {
                     const dedupedLords = Array.from(stat.lordIds)
                         .map((lordId) => selectedLords.find((lord) => lord.lordId === lordId))
@@ -741,7 +742,7 @@
                     const totalKnights = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.milites) || 0), 0);
                     const totalSoldiers = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.servientes) || 0), 0);
 
-                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs, ${formatNumber(totalSoldiers)} soldiers, ${formatNumber(totalKnights)} total knights, ${formatNumber(stat.fiefs)} knights tied to the fief</li>`;
+                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.numberOfFiefs)} Fief(s), ${formatNumber(stat.knightsOwed)} Knights Owed Before Obligation, ${formatNumber(totalSoldiers)} Soldiers, ${formatNumber(totalKnights)} Total Knights</li>`;
                 });
 
             el.innerHTML = `
@@ -769,8 +770,7 @@
                 const checked = state.selectedLordIds.has(lord.lordId) ? 'checked' : '';
                 const holdingsPreview = lord.holdings.slice(0, 6)
                     .map((holding) => {
-                        const supNorm = normalize(holding.superior || '');
-                        const displaySup = supNorm.includes('comit') ? 'Self' : (holding.superior || 'NA');
+                        const displaySup = holding.superior || 'NA';
                         return `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} fiefs — Superior: ${escapeHtml(displaySup)}</li>`;
                     })
                     .join('');
