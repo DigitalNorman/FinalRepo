@@ -588,6 +588,18 @@
         function buildLordData(lordsRows, holdingsRows) {
             const byId = new Map();
 
+            // Build a mapping from Book_ID to servientes (soldiers) when available
+            const bookServMap = new Map();
+            lordsRows.forEach((row) => {
+                const book = clean(row.Book_ID);
+                const serv = parseNumeric(row.Servientes);
+                if (book && serv !== null) {
+                    bookServMap.set(book, serv);
+                }
+            });
+            // Expose to state so other functions (renderSuperiorCounts) can use it
+            state.bookServMap = bookServMap;
+
             lordsRows.forEach((row) => {
                 const id = clean(row.Lord_ID);
                 if (!id) {
@@ -657,6 +669,7 @@
                     modernCommune: clean(row.Mod_Com_Name) || 'NA',
                     province: clean(row.Modern_Province) || 'NA',
                     numberFeudi: clean(row.Number_Feudi) || 'NA',
+                    bookId: clean(row.Book_ID) || 'NA',
                     superior
                 });
             });
@@ -721,14 +734,26 @@
             // Compute fief entry counts and knights owed per superior, and dedupe lord-level totals per superior.
             const superiorStats = new Map();
 
+            const bookServMap = state.bookServMap || new Map();
+
             selectedLords.forEach((lord) => {
                 lord.holdings.forEach((h) => {
                     const superior = h.superior || 'NA';
                     const feudi = parseNumeric(h.numberFeudi) || 0;
-                    const stat = superiorStats.get(superior) || { knightsOwed: 0, numberOfFiefs: 0, lordIds: new Set() };
+                    const stat = superiorStats.get(superior) || { knightsOwed: 0, numberOfFiefs: 0, lordIds: new Set(), bookIds: new Set(), soldiersFromBooks: 0 };
                     stat.knightsOwed += feudi;
                     stat.numberOfFiefs += 1;
                     stat.lordIds.add(lord.lordId);
+
+                    const b = h.bookId;
+                    if (b && b !== 'NA' && !stat.bookIds.has(b)) {
+                        stat.bookIds.add(b);
+                        const serv = bookServMap.get(b);
+                        if (serv != null) {
+                            stat.soldiersFromBooks += serv;
+                        }
+                    }
+
                     superiorStats.set(superior, stat);
                 });
             });
@@ -740,9 +765,8 @@
                         .map((lordId) => selectedLords.find((lord) => lord.lordId === lordId))
                         .filter(Boolean);
                     const totalKnights = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.milites) || 0), 0);
-                    const totalSoldiers = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.servientes) || 0), 0);
 
-                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.numberOfFiefs)} Fief(s), ${formatNumber(stat.knightsOwed)} Knights Owed Before Obligation, ${formatNumber(totalSoldiers)} Soldiers, ${formatNumber(totalKnights)} Total Knights</li>`;
+                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.numberOfFiefs)} Fief(s), ${formatNumber(stat.knightsOwed)} Knights Owed Before Obligation, ${formatNumber(stat.soldiersFromBooks)} Soldiers, ${formatNumber(totalKnights)} Total Knights</li>`;
                 });
 
             el.innerHTML = `
