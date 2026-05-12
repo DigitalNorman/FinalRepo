@@ -285,29 +285,6 @@
             margin: 0 0 0.55rem;
         }
 
-        .legend-controls {
-            display: grid;
-            gap: 0.35rem;
-            margin-bottom: 0.55rem;
-        }
-
-        .legend-metric-label {
-            font-size: 0.76rem;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            text-transform: uppercase;
-        }
-
-        .legend-metric-select {
-            width: 100%;
-            padding: 0.35rem 0.45rem;
-            border: 1px solid rgba(75, 55, 42, 0.35);
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.8);
-            color: #4b372a;
-            font: inherit;
-        }
-
         .legend-scale {
             display: grid;
             gap: 0.35rem;
@@ -497,18 +474,6 @@
                 subtitle: 'Color shows knights owed before obligation in each commune.',
                 note: 'Darker red means more knights owed before obligation.',
                 gradientLabel: 'Least to most knights owed before obligation'
-            },
-            totalKnights: {
-                label: 'Total Knights',
-                subtitle: 'Color shows total knights in each commune.',
-                note: 'Darker red means more total knights.',
-                gradientLabel: 'Least to most total knights'
-            },
-            totalSoldiers: {
-                label: 'Soldiers',
-                subtitle: 'Color shows total soldiers in each commune.',
-                note: 'Darker red means more soldiers.',
-                gradientLabel: 'Least to most soldiers'
             }
         };
 
@@ -974,18 +939,9 @@
             if (!ui.legend) {
                 return;
             }
-            const metric = SHADING_METRICS[state.mapShadingMetric] || SHADING_METRICS.fiefKnightsOwed;
-            const options = Object.entries(SHADING_METRICS)
-                .map(([key, option]) => `<option value="${escapeHtml(key)}"${key === state.mapShadingMetric ? ' selected' : ''}>${escapeHtml(option.label)}</option>`)
-                .join('');
+            const metric = SHADING_METRICS.fiefKnightsOwed;
             ui.legend.innerHTML = `
                 <h3>Map Legend</h3>
-                <div class="legend-controls">
-                    <label class="legend-metric-label" for="map-shading-metric">Shade map by</label>
-                    <select id="map-shading-metric" class="legend-metric-select">
-                        ${options}
-                    </select>
-                </div>
                 <p class="legend-subtitle">${escapeHtml(metric.subtitle)}</p>
                 <div class="legend-scale">
                     <div class="legend-gradient"></div>
@@ -1013,8 +969,6 @@
                     <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
                     <strong>Knights Owed Before Obligation:</strong> ${formatNumber(stat.fiefKnightsOwed)}
-                    <br><strong>Total Knights:</strong> ${formatNumber(stat.totalKnights)}
-                    <br><strong>Soldiers:</strong> ${formatNumber(stat.soldiersFromBooks)}
                 </div>
             `;
         }
@@ -1277,21 +1231,6 @@
                 state.hideUnassociatedOutlines = !state.hideUnassociatedOutlines;
                 setOutlineToggleLabel();
                 applyMapSelection();
-            });
-
-            ui.legend.addEventListener('change', (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLSelectElement)) {
-                    return;
-                }
-                if (target.id !== 'map-shading-metric') {
-                    return;
-                }
-
-                if (target.value in SHADING_METRICS) {
-                    state.mapShadingMetric = target.value;
-                    applyMapSelection();
-                }
             });
 
             // display toggle removed per user request
