@@ -160,7 +160,7 @@ function superiorDisplayValues(holding) {
 
     const comitatus = clean(holding.Comitatus);
     if (comitatus && normalize(comitatus) !== 'na') {
-        values.push('Self');
+        values.push(comitatus);
     }
 
     return values;

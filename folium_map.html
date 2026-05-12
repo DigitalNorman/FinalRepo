@@ -189,14 +189,33 @@
         }
 
         .lord-superior-details summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             cursor: pointer;
             font-weight: 700;
             color: #5a3730;
-            padding: 0.35rem 0.6rem;
+            padding: 0.5rem 0.7rem;
             border-radius: 4px;
-            background: rgba(255,255,255,0.6);
+            background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(247, 237, 217, 0.95));
             list-style: none;
-            border: 1px solid rgba(107,26,39,0.06);
+            border: 1px solid rgba(107,26,39,0.14);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+        }
+
+        .lord-superior-details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .lord-superior-details summary::after {
+            content: '▾';
+            margin-left: 0.75rem;
+            font-size: 0.95rem;
+            transition: transform 0.18s ease;
+        }
+
+        .lord-superior-details[open] summary::after {
+            transform: rotate(180deg);
         }
 
         .lord-superior-details[open] .lord-superior-stats {
@@ -699,27 +718,36 @@
                 return;
             }
 
-            // Compute exact fief counts per superior and present knights owed from those fiefs (exact, not estimated)
+            // Compute exact fief counts per superior and dedupe lord-level totals per superior.
             const superiorStats = new Map();
 
             selectedLords.forEach((lord) => {
                 lord.holdings.forEach((h) => {
                     const superior = h.superior || 'NA';
                     const feudi = parseNumeric(h.numberFeudi) || 0;
-                    const stat = superiorStats.get(superior) || { fiefs: 0 };
+                    const stat = superiorStats.get(superior) || { fiefs: 0, lordIds: new Set() };
                     stat.fiefs += feudi;
+                    stat.lordIds.add(lord.lordId);
                     superiorStats.set(superior, stat);
                 });
             });
 
             const rows = Array.from(superiorStats.entries())
                 .sort((a, b) => b[1].fiefs - a[1].fiefs)
-                .map(([sup, stat]) => `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs</li>`);
+                .map(([sup, stat]) => {
+                    const dedupedLords = Array.from(stat.lordIds)
+                        .map((lordId) => selectedLords.find((lord) => lord.lordId === lordId))
+                        .filter(Boolean);
+                    const totalKnights = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.milites) || 0), 0);
+                    const totalSoldiers = dedupedLords.reduce((sum, lord) => sum + (parseNumeric(lord.servientes) || 0), 0);
+
+                    return `<li><strong>${escapeHtml(sup)}</strong>: ${formatNumber(stat.fiefs)} fiefs, ${formatNumber(totalSoldiers)} soldiers, ${formatNumber(totalKnights)} total knights, ${formatNumber(stat.fiefs)} knights tied to the fief</li>`;
+                });
 
             el.innerHTML = `
                 <div class="lord-meta">
                     <p><strong>Fiefs by Superior:</strong></p>
-                    <p>Counts are based on the fief rows tied to each superior, so they are not doubled across lords.</p>
+                    <p>Counts are based on the fief rows tied to each superior. Lord totals are listed once per superior, even when a lord has multiple matching holdings.</p>
                     <ul>${rows.join('') || '<li>None</li>'}</ul>
                 </div>
             `;
