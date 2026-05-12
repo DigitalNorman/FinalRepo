@@ -803,7 +803,7 @@
                 const holdingsPreview = lord.holdings.slice(0, 6)
                     .map((holding) => {
                         const displaySup = holding.superior || 'NA';
-                        return `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} Soldiers Before Obligation — Superior: ${escapeHtml(displaySup)}</li>`;
+                        return `<li>${escapeHtml(holding.modernCommune)} (${escapeHtml(holding.province)}) - ${escapeHtml(holding.numberFeudi)} Knights Owed Before Obligation — Superior: ${escapeHtml(displaySup)}</li>`;
                     })
                     .join('');
                 const extraCount = lord.holdings.length > 6
@@ -914,6 +914,32 @@
             return null;
         }
 
+        function lordIdsForCommune(mapApi, communeKey) {
+            const lordIds = new Set();
+
+            state.lords.forEach((lord) => {
+                if (lord.holdings.some((holding) => resolveHoldingCommuneKey(mapApi, holding) === communeKey)) {
+                    lordIds.add(lord.lordId);
+                }
+            });
+
+            return lordIds;
+        }
+
+        function selectCommune(mapApi, communeKey) {
+            const lordIds = lordIdsForCommune(mapApi, communeKey);
+            if (!lordIds.size) {
+                return;
+            }
+
+            state.selectedLordIds = lordIds;
+            state.query = '';
+            ui.search.value = '';
+            filterLords();
+            renderLordList();
+            applyMapSelection();
+        }
+
         function choroplethColor(count, maxCount) {
             if (count <= 0 || maxCount <= 0) {
                 return '#efe2c5';
@@ -995,19 +1021,19 @@
 
         function associatedCommuneKeys(mapApi) {
             const keys = new Set();
+            const selectedLords = state.lords.filter((lord) => state.selectedLordIds.has(lord.lordId));
+            const sourceLords = selectedLords.length ? selectedLords : state.lords;
 
-            // Only include communes from currently selected lords so that
-            // hiding unassociated outlines respects the active selection.
-            state.lords
-                .filter((lord) => state.selectedLordIds.has(lord.lordId))
-                .forEach((lord) => {
-                    lord.holdings.forEach((holding) => {
-                        const communeKey = resolveHoldingCommuneKey(mapApi, holding);
-                        if (communeKey) {
-                            keys.add(communeKey);
-                        }
-                    });
+            // Show outlines for communes with holdings even when nothing is selected,
+            // while still respecting the current selection when there is one.
+            sourceLords.forEach((lord) => {
+                lord.holdings.forEach((holding) => {
+                    const communeKey = resolveHoldingCommuneKey(mapApi, holding);
+                    if (communeKey) {
+                        keys.add(communeKey);
+                    }
                 });
+            });
 
             return keys;
         }
@@ -1029,6 +1055,7 @@
                     }
                     layer.off('mouseover');
                     layer.off('mouseout');
+                        layer.off('click');
                     if (layer.closeTooltip) {
                         layer.closeTooltip();
                     }
@@ -1137,6 +1164,7 @@
 
                 layer.off('mouseover');
                 layer.off('mouseout');
+                layer.off('click');
                 if (layer.closeTooltip) {
                     layer.closeTooltip();
                 }
@@ -1173,6 +1201,9 @@
                         // Keep commune selected on hover out; do not reset to default.
                         layer.setStyle(activeStyle);
                     });
+                    layer.on('click', () => {
+                        selectCommune(mapApi, communeKey);
+                    });
 
                     if (layer.getBounds) {
                         selectionBounds.extend(layer.getBounds());
@@ -1182,7 +1213,13 @@
                         layer.setStyle(hiddenPolygonStyle());
                         return;
                     }
-                    layer.setStyle(defaultPolygonStyle());
+                    const defaultStyle = defaultPolygonStyle();
+                    layer.setStyle(defaultStyle);
+                    if (associatedKeys.has(communeKey)) {
+                        layer.on('click', () => {
+                            selectCommune(mapApi, communeKey);
+                        });
+                    }
                 }
             });
 
