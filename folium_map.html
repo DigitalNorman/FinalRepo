@@ -271,7 +271,7 @@
             color: #4b372a;
             font-size: 0.82rem;
             line-height: 1.35;
-            pointer-events: none;
+            pointer-events: auto;
         }
 
         .map-legend h3 {
@@ -283,6 +283,29 @@
 
         .legend-subtitle {
             margin: 0 0 0.55rem;
+        }
+
+        .legend-controls {
+            display: grid;
+            gap: 0.35rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .legend-metric-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .legend-metric-select {
+            width: 100%;
+            padding: 0.35rem 0.45rem;
+            border: 1px solid rgba(75, 55, 42, 0.35);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.8);
+            color: #4b372a;
+            font: inherit;
         }
 
         .legend-scale {
@@ -463,8 +486,30 @@
             mapApi: null,
             totalFiefsOwed: 0,
             isPanelCollapsed: false,
-            hideUnassociatedOutlines: true
+            hideUnassociatedOutlines: true,
+            mapShadingMetric: 'fiefKnightsOwed'
             
+        };
+
+        const SHADING_METRICS = {
+            fiefKnightsOwed: {
+                label: 'Knights Owed Before Obligation',
+                subtitle: 'Color shows knights owed before obligation in each commune.',
+                note: 'Darker red means more knights owed before obligation.',
+                gradientLabel: 'Least to most knights owed before obligation'
+            },
+            totalKnights: {
+                label: 'Total Knights',
+                subtitle: 'Color shows total knights in each commune.',
+                note: 'Darker red means more total knights.',
+                gradientLabel: 'Least to most total knights'
+            },
+            totalSoldiers: {
+                label: 'Soldiers',
+                subtitle: 'Color shows total soldiers in each commune.',
+                note: 'Darker red means more soldiers.',
+                gradientLabel: 'Least to most soldiers'
+            }
         };
 
         function setOutlineToggleLabel() {
@@ -812,8 +857,10 @@
                         <details>
                             <summary>Show Details</summary>
                             <div class="lord-meta">
-                                <p><strong>Number of Fiefs:</strong> ${escapeHtml(lord.feudiOwned)}</p>
-                                <p><strong>Fief Location & Superior:</strong></p>
+                                <p><strong>Knights Owed Before Obligation:</strong> ${escapeHtml(lord.feudiOwned)}</p>
+                                <p><strong>Total Knights:</strong> ${escapeHtml(lord.totalKnights)}</p>
+                                <p><strong>Soldiers:</strong> ${escapeHtml(lord.totalSoldiers)}</p>
+                                <p><strong>Knights Owed Before Obligation by Fief Location & Superior:</strong></p>
                                 <ul>${holdingsPreview}${extraCount}</ul>
                             </div>
                         </details>
@@ -927,14 +974,24 @@
             if (!ui.legend) {
                 return;
             }
+            const metric = SHADING_METRICS[state.mapShadingMetric] || SHADING_METRICS.fiefKnightsOwed;
+            const options = Object.entries(SHADING_METRICS)
+                .map(([key, option]) => `<option value="${escapeHtml(key)}"${key === state.mapShadingMetric ? ' selected' : ''}>${escapeHtml(option.label)}</option>`)
+                .join('');
             ui.legend.innerHTML = `
                 <h3>Map Legend</h3>
-                <p class="legend-subtitle">Color shows how many fiefs are present in each commune.</p>
+                <div class="legend-controls">
+                    <label class="legend-metric-label" for="map-shading-metric">Shade map by</label>
+                    <select id="map-shading-metric" class="legend-metric-select">
+                        ${options}
+                    </select>
+                </div>
+                <p class="legend-subtitle">${escapeHtml(metric.subtitle)}</p>
                 <div class="legend-scale">
                     <div class="legend-gradient"></div>
-                    <div class="legend-gradient-label">Least fiefs to most fiefs</div>
+                    <div class="legend-gradient-label">${escapeHtml(metric.gradientLabel)}</div>
                 </div>
-                <p class="legend-note">${hasSelection && Number.isFinite(maxValue) && maxValue > 0 ? 'Darker red means more fiefs.' : 'Select one or more lords to activate shading.'}</p>
+                <p class="legend-note">${hasSelection && Number.isFinite(maxValue) && maxValue > 0 ? escapeHtml(metric.note) : 'Select one or more lords to activate shading.'}</p>
             `;
         }
 
@@ -955,7 +1012,9 @@
                 <div style="line-height:1.35;max-width:320px;">
                     <strong>Selected Lords:</strong> ${stat.lordIds.size}<br>
                     <strong>Lord IDs:</strong> <span style="white-space:normal;word-break:break-word;">${idText || 'NA'}</span><br>
-                    <strong>Fiefs at Commune:</strong> ${formatNumber(stat.fiefKnightsOwed)}
+                    <strong>Knights Owed Before Obligation:</strong> ${formatNumber(stat.fiefKnightsOwed)}
+                    <br><strong>Total Knights:</strong> ${formatNumber(stat.totalKnights)}
+                    <br><strong>Soldiers:</strong> ${formatNumber(stat.totalSoldiers)}
                 </div>
             `;
         }
@@ -1043,6 +1102,8 @@
 
             selectedLords.forEach((lord) => {
                 const lordCommuneFeudi = new Map();
+                const lordSoldiers = parseNumeric(lord.servientes) || 0;
+                const lordKnights = parseNumeric(lord.milites) || 0;
 
                 lord.holdings.forEach((holding) => {
                     const communeKey = resolveHoldingCommuneKey(mapApi, holding);
@@ -1066,17 +1127,23 @@
                     if (!communeStats.has(communeKey)) {
                         communeStats.set(communeKey, {
                             fiefKnightsOwed: 0,
-                            lordIds: new Set()
+                            lordIds: new Set(),
+                            totalSoldiers: 0,
+                            totalKnights: 0
                         });
                     }
 
                     const stat = communeStats.get(communeKey);
-                    stat.lordIds.add(lord.lordId);
+                    if (!stat.lordIds.has(lord.lordId)) {
+                        stat.lordIds.add(lord.lordId);
+                        stat.totalSoldiers += lordSoldiers;
+                        stat.totalKnights += lordKnights;
+                    }
                     stat.fiefKnightsOwed += feudiAtCommune;
                 });
             });
 
-            const metricKey = 'fiefKnightsOwed';
+            const metricKey = state.mapShadingMetric || 'fiefKnightsOwed';
             let maxMetric = 0;
             communeStats.forEach((stat) => {
                 const v = stat[metricKey] || 0;
@@ -1191,6 +1258,21 @@
                 state.hideUnassociatedOutlines = !state.hideUnassociatedOutlines;
                 setOutlineToggleLabel();
                 applyMapSelection();
+            });
+
+            ui.legend.addEventListener('change', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLSelectElement)) {
+                    return;
+                }
+                if (target.id !== 'map-shading-metric') {
+                    return;
+                }
+
+                if (target.value in SHADING_METRICS) {
+                    state.mapShadingMetric = target.value;
+                    applyMapSelection();
+                }
             });
 
             // display toggle removed per user request
