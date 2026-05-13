@@ -277,6 +277,26 @@
             pointer-events: auto;
         }
 
+        .map-clear-communes {
+            position: absolute;
+            right: 14px;
+            bottom: 178px;
+            z-index: 521;
+            padding: 0.45rem 0.65rem;
+            border: 2px solid rgba(107, 26, 39, 0.35);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(249, 239, 221, 0.96), rgba(241, 228, 202, 0.96));
+            color: #4b372a;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+
+        .map-clear-communes.is-hidden {
+            display: none;
+        }
+
         .map-legend h3 {
             margin: 0 0 0.45rem;
             font-size: 0.86rem;
@@ -426,6 +446,7 @@
         ></iframe>
 
         <div id="map-legend" class="map-legend" aria-live="polite"></div>
+        <button id="map-clear-communes" class="map-clear-communes is-hidden" type="button">Deselect Communes</button>
     </section>
 
     <footer class="site-footer">
@@ -457,7 +478,8 @@
             panelToggle: document.getElementById('lord-panel-toggle'),
             panelRestore: document.getElementById('lord-panel-restore'),
             iframe: document.getElementById('folium-iframe'),
-            legend: document.getElementById('map-legend')
+            legend: document.getElementById('map-legend'),
+            clearCommunes: document.getElementById('map-clear-communes')
         };
 
         const state = {
@@ -469,7 +491,8 @@
             totalFiefsOwed: 0,
             isPanelCollapsed: false,
             hideUnassociatedOutlines: true,
-            mapShadingMetric: 'fiefKnightsOwed'
+            mapShadingMetric: 'fiefKnightsOwed',
+            selectedCommuneKeys: new Set()
             
         };
 
@@ -932,10 +955,20 @@
         }
 
         function selectCommune(mapApi, communeKey) {
-            const lordIds = lordIdsForCommune(mapApi, communeKey);
-            if (!lordIds.size) {
+            if (!communeKey) {
                 return;
             }
+
+            if (state.selectedCommuneKeys.has(communeKey)) {
+                state.selectedCommuneKeys.delete(communeKey);
+            } else {
+                state.selectedCommuneKeys.add(communeKey);
+            }
+
+            const lordIds = new Set();
+            state.selectedCommuneKeys.forEach((key) => {
+                lordIdsForCommune(mapApi, key).forEach((lordId) => lordIds.add(lordId));
+            });
 
             state.selectedLordIds = lordIds;
             state.query = '';
@@ -1026,12 +1059,9 @@
 
         function associatedCommuneKeys(mapApi) {
             const keys = new Set();
-            const selectedLords = state.lords.filter((lord) => state.selectedLordIds.has(lord.lordId));
-            const sourceLords = selectedLords.length ? selectedLords : state.lords;
 
-            // Show outlines for communes with holdings even when nothing is selected,
-            // while still respecting the current selection when there is one.
-            sourceLords.forEach((lord) => {
+            // Keep outlines for all communes that have any holdings.
+            state.lords.forEach((lord) => {
                 lord.holdings.forEach((holding) => {
                     const communeKey = resolveHoldingCommuneKey(mapApi, holding);
                     if (communeKey) {
@@ -1086,6 +1116,9 @@
                 renderLegend(0, false);
                 setStatus();
                 renderSuperiorCounts();
+                if (ui.clearCommunes) {
+                    ui.clearCommunes.classList.toggle('is-hidden', state.selectedCommuneKeys.size === 0);
+                }
                 return;
             }
             
@@ -1244,6 +1277,9 @@
             renderLegend(maxMetric, selectedLords.length > 0);
             setStatus();
             renderSuperiorCounts();
+            if (ui.clearCommunes) {
+                ui.clearCommunes.classList.toggle('is-hidden', state.selectedCommuneKeys.size === 0);
+            }
         }
 
         function bindUI() {
@@ -1262,12 +1298,14 @@
             });
 
             ui.selectVisible.addEventListener('click', () => {
+                state.selectedCommuneKeys.clear();
                 state.filteredLordIds.forEach((lordId) => state.selectedLordIds.add(lordId));
                 renderLordList();
                 applyMapSelection();
             });
 
             ui.clearSelection.addEventListener('click', () => {
+                state.selectedCommuneKeys.clear();
                 state.selectedLordIds.clear();
                 renderLordList();
                 applyMapSelection();
@@ -1296,14 +1334,25 @@
                 }
 
                 if (target.checked) {
+                    state.selectedCommuneKeys.clear();
                     state.selectedLordIds.add(lordId);
                 } else {
+                    state.selectedCommuneKeys.clear();
                     state.selectedLordIds.delete(lordId);
                 }
 
                 renderLordList();
                 applyMapSelection();
             });
+
+            if (ui.clearCommunes) {
+                ui.clearCommunes.addEventListener('click', () => {
+                    state.selectedCommuneKeys.clear();
+                    state.selectedLordIds.clear();
+                    renderLordList();
+                    applyMapSelection();
+                });
+            }
 
             ui.iframe.addEventListener('load', () => {
                 applyMapSelection();
