@@ -280,7 +280,7 @@
         .map-clear-communes {
             position: absolute;
             right: 14px;
-            bottom: 114px;
+            top: 14px;
             z-index: 521;
             padding: 0.45rem 0.65rem;
             border: 2px solid rgba(107, 26, 39, 0.35);
@@ -295,6 +295,54 @@
 
         .map-clear-communes.is-hidden {
             display: none;
+        }
+
+        .map-selected-communes {
+            position: absolute;
+            right: 14px;
+            top: 56px;
+            z-index: 521;
+            max-width: 240px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0.65rem 0.75rem;
+            border: 2px solid rgba(107, 26, 39, 0.3);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(249, 239, 221, 0.97), rgba(241, 228, 202, 0.97));
+            color: #4b372a;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+            font-size: 0.75rem;
+            line-height: 1.4;
+            pointer-events: auto;
+        }
+
+        .map-selected-communes.is-hidden {
+            display: none;
+        }
+
+        .map-selected-communes-title {
+            font-weight: 700;
+            margin: 0 0 0.4rem 0;
+            font-size: 0.8rem;
+            letter-spacing: 0.03em;
+            color: #6b1a27;
+        }
+
+        .map-selected-communes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .map-selected-communes-item {
+            padding: 0.25rem 0.4rem;
+            background: rgba(255, 255, 255, 0.6);
+            border-left: 3px solid #6b1a27;
+            border-radius: 2px;
+            word-break: break-word;
         }
 
         .map-legend h3 {
@@ -411,7 +459,7 @@
 
     <section class="intro-section">
         <p>
-            Select one or more lords from the left panel. Their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. The drop down menu shows the superior which these fees are direcly owed and the number of fiefs associated with them. Click on a commune to select all lords with holdings in that commune. </p>
+            Select one or more lords from the panel below and their associated holdings are projected onto the map. Use this to compare the distribution of holdings along with their associated fees. This can give you an idea of the spatial distribution of power and resources in the region. The drop down menu shows the superior which these fees are direcly owed and the number of fiefs associated with them. Click on a commune to select all lords with holdings in that commune. </p>
     </section>
 
     <section class="folium-wrap">
@@ -445,8 +493,12 @@
             referrerpolicy="no-referrer"
         ></iframe>
 
-        <div id="map-legend" class="map-legend" aria-live="polite"></div>
         <button id="map-clear-communes" class="map-clear-communes is-hidden" type="button">Deselect Communes</button>
+        <div id="map-selected-communes" class="map-selected-communes is-hidden" aria-live="polite">
+            <div class="map-selected-communes-title">Selected Regions</div>
+            <ul id="map-selected-communes-list" class="map-selected-communes-list"></ul>
+        </div>
+        <div id="map-legend" class="map-legend" aria-live="polite"></div>
     </section>
 
     <footer class="site-footer">
@@ -479,7 +531,9 @@
             panelRestore: document.getElementById('lord-panel-restore'),
             iframe: document.getElementById('folium-iframe'),
             legend: document.getElementById('map-legend'),
-            clearCommunes: document.getElementById('map-clear-communes')
+            clearCommunes: document.getElementById('map-clear-communes'),
+            selectedCommunes: document.getElementById('map-selected-communes'),
+            selectedCommunesList: document.getElementById('map-selected-communes-list')
         };
 
         const state = {
@@ -968,6 +1022,23 @@
             return lordIds;
         }
 
+        function renderSelectedCommunes() {
+            if (!ui.selectedCommunes || !ui.selectedCommunesList) {
+                return;
+            }
+
+            if (state.selectedCommuneKeys.size === 0) {
+                ui.selectedCommunes.classList.add('is-hidden');
+                return;
+            }
+
+            ui.selectedCommunes.classList.remove('is-hidden');
+            const sortedCommunes = Array.from(state.selectedCommuneKeys).sort();
+            ui.selectedCommunesList.innerHTML = sortedCommunes
+                .map((commune) => `<li class="map-selected-communes-item">${escapeHtml(commune)}</li>`)
+                .join('');
+        }
+
         function selectCommune(mapApi, communeKey) {
             if (!communeKey) {
                 return;
@@ -989,6 +1060,7 @@
             ui.search.value = '';
             filterLords();
             renderLordList();
+            renderSelectedCommunes();
             applyMapSelection();
         }
 
@@ -1364,6 +1436,7 @@
                     state.selectedCommuneKeys.clear();
                     state.selectedLordIds.clear();
                     renderLordList();
+                    renderSelectedCommunes();
                     applyMapSelection();
                 });
             }
@@ -1398,6 +1471,7 @@
             renderLegend(0, false);
             setStatus();
             renderLordList();
+            renderSelectedCommunes();
             applyMapSelection();
         }
 
