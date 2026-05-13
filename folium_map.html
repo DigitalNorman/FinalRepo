@@ -280,7 +280,7 @@
         .map-clear-communes {
             position: absolute;
             right: 14px;
-            top: 14px;
+            bottom: 114px;
             z-index: 521;
             padding: 0.45rem 0.65rem;
             border: 2px solid rgba(107, 26, 39, 0.35);
@@ -300,7 +300,7 @@
         .map-selected-communes {
             position: absolute;
             right: 14px;
-            top: 56px;
+            bottom: 158px;
             z-index: 521;
             max-width: 240px;
             max-height: 200px;
@@ -317,6 +317,26 @@
         }
 
         .map-selected-communes.is-hidden {
+            display: none;
+        }
+
+        .map-selected-communes-toggle {
+            position: absolute;
+            right: 14px;
+            bottom: 368px;
+            z-index: 521;
+            padding: 0.35rem 0.55rem;
+            border: 2px solid rgba(107, 26, 39, 0.3);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(249, 239, 221, 0.96), rgba(241, 228, 202, 0.96));
+            color: #4b372a;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+            font-size: 0.68rem;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+        }
+
+        .map-selected-communes-toggle.is-hidden {
             display: none;
         }
 
@@ -494,6 +514,7 @@
         ></iframe>
 
         <button id="map-clear-communes" class="map-clear-communes is-hidden" type="button">Deselect Communes</button>
+        <button id="map-selected-communes-toggle" class="map-selected-communes-toggle is-hidden" type="button">Hide Regions</button>
         <div id="map-selected-communes" class="map-selected-communes is-hidden" aria-live="polite">
             <div class="map-selected-communes-title">Selected Regions</div>
             <ul id="map-selected-communes-list" class="map-selected-communes-list"></ul>
@@ -532,6 +553,7 @@
             iframe: document.getElementById('folium-iframe'),
             legend: document.getElementById('map-legend'),
             clearCommunes: document.getElementById('map-clear-communes'),
+            selectedCommunesToggle: document.getElementById('map-selected-communes-toggle'),
             selectedCommunes: document.getElementById('map-selected-communes'),
             selectedCommunesList: document.getElementById('map-selected-communes-list')
         };
@@ -546,7 +568,8 @@
             isPanelCollapsed: false,
             hideUnassociatedOutlines: true,
             mapShadingMetric: 'fiefKnightsOwed',
-            selectedCommuneKeys: new Set()
+            selectedCommuneKeys: new Set(),
+            selectedCommunesHidden: false
             
         };
 
@@ -782,6 +805,11 @@
             const hasCommunes = state.selectedCommuneKeys.size > 0;
             const mapApi = hasCommunes ? getMapApi() : null;
 
+            if (!query && !hasCommunes) {
+                state.filteredLordIds = state.lords.map((lord) => lord.lordId);
+                return;
+            }
+
             state.filteredLordIds = state.lords
                 .filter((lord) => {
                     // If communes are selected, lord must have holdings in those communes
@@ -807,6 +835,23 @@
                     return true;
                 })
                 .map((lord) => lord.lordId);
+        }
+
+        function showAllLords() {
+            state.query = '';
+            state.selectedCommuneKeys.clear();
+            if (ui.search) {
+                ui.search.value = '';
+            }
+            filterLords();
+            renderLordList();
+            renderSelectedCommunes();
+            applyMapSelection();
+        }
+
+        function clearAllSelections() {
+            state.selectedLordIds.clear();
+            showAllLords();
         }
 
         function selectedTotalKnights() {
@@ -1027,7 +1072,13 @@
                 return;
             }
 
-            if (state.selectedCommuneKeys.size === 0) {
+            const shouldHide = state.selectedCommunesHidden || state.selectedCommuneKeys.size === 0;
+            if (ui.selectedCommunesToggle) {
+                ui.selectedCommunesToggle.classList.toggle('is-hidden', state.selectedCommuneKeys.size === 0);
+                ui.selectedCommunesToggle.textContent = state.selectedCommunesHidden ? 'Show Regions' : 'Hide Regions';
+            }
+
+            if (shouldHide) {
                 ui.selectedCommunes.classList.add('is-hidden');
                 return;
             }
@@ -1379,6 +1430,10 @@
 
             ui.search.addEventListener('input', () => {
                 state.query = ui.search.value;
+                if (!state.query) {
+                    showAllLords();
+                    return;
+                }
                 filterLords();
                 renderLordList();
             });
@@ -1391,10 +1446,7 @@
             });
 
             ui.clearSelection.addEventListener('click', () => {
-                state.selectedCommuneKeys.clear();
-                state.selectedLordIds.clear();
-                renderLordList();
-                applyMapSelection();
+                clearAllSelections();
             });
 
             ui.toggleUnassociated.addEventListener('click', () => {
@@ -1433,11 +1485,14 @@
 
             if (ui.clearCommunes) {
                 ui.clearCommunes.addEventListener('click', () => {
-                    state.selectedCommuneKeys.clear();
-                    state.selectedLordIds.clear();
-                    renderLordList();
+                    showAllLords();
+                });
+            }
+
+            if (ui.selectedCommunesToggle) {
+                ui.selectedCommunesToggle.addEventListener('click', () => {
+                    state.selectedCommunesHidden = !state.selectedCommunesHidden;
                     renderSelectedCommunes();
-                    applyMapSelection();
                 });
             }
 
