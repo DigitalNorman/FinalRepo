@@ -280,7 +280,7 @@
         .map-clear-communes {
             position: absolute;
             right: 14px;
-            bottom: 178px;
+            bottom: 114px;
             z-index: 521;
             padding: 0.45rem 0.65rem;
             border: 2px solid rgba(107, 26, 39, 0.35);
@@ -725,18 +725,32 @@
 
         function filterLords() {
             const query = normalize(state.query);
-            if (!query) {
-                state.filteredLordIds = state.lords.map((lord) => lord.lordId);
-                return;
-            }
+            const hasCommunes = state.selectedCommuneKeys.size > 0;
+            const mapApi = hasCommunes ? getMapApi() : null;
 
             state.filteredLordIds = state.lords
                 .filter((lord) => {
-                    const base = `${lord.lordId} ${lord.firstname} ${lord.surname} ${lord.fullName}`;
-                    const holdingsText = lord.holdings
-                        .map((holding) => `${holding.modernCommune} ${holding.province} ${holding.superior}`)
-                        .join(' ');
-                    return normalize(`${base} ${holdingsText}`).includes(query);
+                    // If communes are selected, lord must have holdings in those communes
+                    if (hasCommunes && mapApi) {
+                        const hasHoldingInCommune = lord.holdings.some((holding) => {
+                            const communeKey = resolveHoldingCommuneKey(mapApi, holding);
+                            return communeKey && state.selectedCommuneKeys.has(communeKey);
+                        });
+                        if (!hasHoldingInCommune) {
+                            return false;
+                        }
+                    }
+
+                    // If query is provided, lord must match search
+                    if (query) {
+                        const base = `${lord.lordId} ${lord.firstname} ${lord.surname} ${lord.fullName}`;
+                        const holdingsText = lord.holdings
+                            .map((holding) => `${holding.modernCommune} ${holding.province} ${holding.superior}`)
+                            .join(' ');
+                        return normalize(`${base} ${holdingsText}`).includes(query);
+                    }
+
+                    return true;
                 })
                 .map((lord) => lord.lordId);
         }
