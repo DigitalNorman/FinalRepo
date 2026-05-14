@@ -29,7 +29,7 @@
             top: auto;
             left: auto;
             width: 100%;
-            height: min(620px, 72vh);
+            height: min(760px, 82vh);
             z-index: 500;
             display: flex;
             flex-direction: column;
@@ -1067,6 +1067,14 @@
             return lordIds;
         }
 
+        function toTitleCaseWords(value) {
+            return clean(value)
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+        }
+
         function renderSelectedCommunes() {
             if (!ui.selectedCommunes || !ui.selectedCommunesList) {
                 return;
@@ -1086,7 +1094,7 @@
             ui.selectedCommunes.classList.remove('is-hidden');
             const sortedCommunes = Array.from(state.selectedCommuneKeys).sort();
             ui.selectedCommunesList.innerHTML = sortedCommunes
-                .map((commune) => `<li class="map-selected-communes-item">${escapeHtml(commune)}</li>`)
+                .map((commune) => `<li class="map-selected-communes-item">${escapeHtml(toTitleCaseWords(commune))}</li>`)
                 .join('');
         }
 

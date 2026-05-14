@@ -127,6 +127,6 @@ Use these steps when setting up the project on a new machine or after changes to
 
 If the site is already deployed, the live version is available at the URL listed above.
 
-(This page along with the code used to make this website was made with the aid of AI)
+(AI was used heavily in the creation of the website and many of its features.)
 
 

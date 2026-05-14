@@ -1,0 +1,12 @@
+### Sustainability/Copyright Information
+
+The website currently has no hosting fees or costs to maintain at the moment. As long as GitHub Pages remains free to use, so does this website. If GitHub were to vanish or disappear, I do not anticipate moving the project to another hosting site. In this scenario, I would make a few posts on a handful of forums explaining the project and provide an email (made specifically for this purpose). Search engine results would bring up these posts and if a user desperately wanted to see my project they could write to me and I would email the instructions and files. As of right now, I do not anticipate updating or adding more data to the site. At the end of the semester the site will likely be static thereafter. If a user were to expand on the project they would need the files and permission to publish on GitHub, which I would be happy to provide. Seeing how the bones of the project are already there, one could add as many entries as they would like. There is a possibility that all sixteen hundred entries will be cataloged in the future by another.
+
+There are currently very few dependencies that are needed to run the website. The website runs on HTML, Python and uses Leaflet. In order to see the map Python is required as is partly built with Folium. I have all the files downloaded on my two computers and the data files are preserved in my Google cloud storage. All of the file types are open source and to the best of my knowledge and are in non-proprietary formats. Additionally, I have documentation that describes in detail how I cleaned up my data and how to run the website via one's own server. I wrote to the publishers of the book and have yet to hear back from them. However, since I do not intend to make any money, and this information is arguably available elsewhere online through public domain texts, I do not think this will be a problem. The municipality borders I am using are credited on the website site and fall within CC-BY-NC. Because I have been unable to contact the publisher, the website will remain Unlicensed. The website is not the most accessible. It is not WCAG compliant, and there are no screen readers. I am uncertain if a screen reader is able to interpret the chart or the map.  
+
+I commit to maintaining this project until May 16th, 2026. After that, I will keep the project available via GitHub according to the plan above.
+
+**Signed**: Ryan Alves
+
+**Date**: 4/27/2026
+
