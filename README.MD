@@ -127,6 +127,6 @@ Use these steps when setting up the project on a new machine or after changes to
 
 If the site is already deployed, the live version is available at the URL listed above.
 
-(AI was used heavily in the creation of the website and many of its features.)
+(AI was used heavily in the creation of the website and many of its features. This site and all of its information is Unlicenced.)
 
 
